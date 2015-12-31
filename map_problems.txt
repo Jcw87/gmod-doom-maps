@@ -1,0 +1,10 @@
+Known Problems:
+DOOM corpses are not affected by moving floors
+Some DOOM entities are too wide, and block movement of doors, floors, and ceilings
+Floors will sometimes become non-solid if too many entities are intersecting the sector, and objects will 'sink' into it
+2 Sided linedefs that should be solid are not
+Minor tears in floors and ceilings
+Floor and ceiling mesh generation creates deformities on maps with bad nodes or unclosed sectors
+Entities do not share the light level of their sectors
+Enemies don't use doors
+Loading maps with the wrong doom wad will result in missing textures
