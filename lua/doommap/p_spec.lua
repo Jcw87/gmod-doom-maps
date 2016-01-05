@@ -114,7 +114,7 @@ end
 
 -- changed this function so that it can be used in a generic for loop
 function P_FindSectorFromLineTag(line)
-	start = 0
+	local start = 0
 	return function()
 		for i = start+1, #Map.Sectors do
 			start = i
