@@ -5,6 +5,7 @@ local tonumber = tonumber
 
 local CreateClientConVar = CreateClientConVar
 local ScrW = ScrW
+local Vector = Vector
 
 local bit = bit
 local cvars = cvars
@@ -14,154 +15,85 @@ local table = table
 
 setfenv( 1, DOOM )
 
--- from r_segs
-local function R_StoreWallRange(start, stop)
-	local sidedef = curline.side
-	local linedef = curline.linedef
-	linedef.flags = bit.bor(linedef.flags, ML_MAPPED)
-	for _, mesh in pairs(Map.SideMeshes[sidedef.id]) do
-		mesh.visible = true
-	end
-	--[[
-	local sectorid = sidedef.sector.id
-	for _, mesh in ipairs(Map.FloorMeshes[sectorid]) do
-		mesh.visible = true
-	end
-	for _, mesh in ipairs(Map.CeilMeshes[sectorid]) do
-		mesh.visible = true
-	end
-	--]]
+local function MapView(origin, angles, fov)
+	view = origin
+end
+hook.Add("RenderScene", "DOOM.MapView", MapView)
+
+local clipranges = {}
+
+local function ClearClipRanges()
+	table.Empty(clipranges)
 end
 
-local function NormalizeAngle(angle)
-	while angle >= 360 do angle = angle - 360 end
-	while angle < 0 do angle = angle + 360 end
-	return angle
-end
-
--- TODO: make a proper value
-local clipangle = 45
-
-function viewangletox(angle)
-	-- TODO: handle widescreen FOV
-	local centerx = ScrW()/2
-	local focallength = centerx / math.tan(math.rad(45))
-	local t = math.floor(math.tan(math.rad(angle)) * focallength)
-	t = centerx - t + 1
-	t = math.max(t, -1)
-	t = math.min(t, ScrW()+1)
-	return t
-end
-
-local solidsegs = {}
-
-function R_ClipSolidWallSegment(first, last)
-	local start = 1
-	while solidsegs[start].last < first - 1 do start = start + 1 end
-	if first < solidsegs[start].first then
-		if last < solidsegs[start].first-1 then
-			R_StoreWallRange(first, last)
-			table.insert(solidsegs, start, {first = first, last = last})
+local function AddClipRange(startangle, endangle)
+	local i = 1
+	while i <= #clipranges do
+		local range = clipranges[i]
+		if range.startangle >= startangle and range.endangle <= endangle then
+			table.remove(clipranges, i)
+			continue
+		end
+		if range.startangle <= startangle && range.endangle >= endangle then return end
+		i = i + 1
+	end
+	i = 1
+	while i <= #clipranges do
+		local range = clipranges[i]
+		if range.startangle > endangle then break end
+		if range.endangle >= startangle then
+			if range.startangle > startangle then range.startangle = startangle end
+			if range.endangle < endangle then range.endangle = endangle end
+			local range2 = clipranges[i+1]
+			while range2 and range2.startangle <= range.endangle do
+				table.remove(clipranges, i+1)
+				range2 = clipranges[i+1]
+			end
 			return
 		end
-		R_StoreWallRange(first, solidsegs[start].first - 1)
-		solidsegs[start].first = first
+		i = i + 1
 	end
-	if last <= solidsegs[start].last then return end
-	local next = start
-	local crunch = false
-	while last >= solidsegs[next + 1].first - 1 do
-		R_StoreWallRange(solidsegs[next].last + 1, solidsegs[next + 1].first - 1)
-		next = next + 1
-		if last <= solidsegs[next].last then
-			solidsegs[start].last = solidsegs[next].last
-			crunch = true
-			break
-		end
+	i = 1
+	while i <= #clipranges do
+		local range = clipranges[i]
+		if range.startangle > endangle then break end
+		i = i + 1
 	end
-	if not crunch then
-		R_StoreWallRange(solidsegs[next].last + 1, last)
-		solidsegs[start].last = last
-	end
-	if next == start then return end
-	while next > start do
-		table.remove(solidsegs, start+1)
-		next = next - 1
+	local range = {}
+	range.startangle = startangle
+	range.endangle = endangle
+	table.insert(clipranges, i, range)
+end
+
+local function SafeAddClipRange(startangle, endangle)
+	startangle = startangle
+	endangle = endangle
+	if startangle > endangle then
+		AddClipRange(startangle, 360)
+		AddClipRange(0, endangle)
+	else
+		AddClipRange(startangle, endangle)
 	end
 end
 
-function R_ClipPassWallSegment(first, last)
-	local start = 1
-	while solidsegs[start].last < first - 1 do start = start + 1 end
-	if first < solidsegs[start].first then
-		if last < solidsegs[start].first-1 then
-			R_StoreWallRange (first, last)
-			return
-		end
-		R_StoreWallRange (first, solidsegs[start].first - 1)
+local function IsRangeVisible(startangle, endangle)
+	local i = 1
+	local range = clipranges[i]
+	while range and range.startangle < endangle do
+		if startangle >= range.startangle and endangle <= range.endangle then return false end
+		i = i + 1
+		range = clipranges[i]
 	end
-	if last <= solidsegs[start].last then return end
-	while last >= solidsegs[start + 1].first - 1 do
-		R_StoreWallRange(solidsegs[start].last + 1, solidsegs[start + 1].first - 1)
-		start = start + 1
-		if last <= solidsegs[start].last then return end
-	end
-	R_StoreWallRange(solidsegs[start].last + 1, last)
+	return true
 end
 
-function R_ClearClipSegs()
-	while #solidsegs < 2 do table.insert(solidsegs, {}) end
-	while #solidsegs > 2 do table.remove(solidsegs) end
-	solidsegs[1].first = -65535
-	solidsegs[1].last = -1
-	solidsegs[2].first = ScrW()
-	solidsegs[2].last = 65535
-end
-
-function R_AddLine(line)
-	curline = line
-	local angle1 = R_PointToAngle(line.v1.x, line.v1.y)
-    local angle2 = R_PointToAngle(line.v2.x, line.v2.y)
-	local span = NormalizeAngle(angle1 - angle2)
-	if span > 180 then return end
-	
-	--rw_angle1 = NormalizeAngle(angle1)
-	angle1 = NormalizeAngle(angle1 - viewangle)
-	angle2 = NormalizeAngle(angle2 - viewangle)
-
-	local tspan = NormalizeAngle(angle1 + clipangle)
-	if tspan > 2*clipangle then
-		tspan = NormalizeAngle(tspan - 2*clipangle)
-		if tspan >= span then return end
-		angle1 = clipangle
+local function SafeCheckRange(startangle, endangle)
+	startangle = startangle
+	endangle = endangle
+	if startangle > endangle then
+		return IsRangeVisible(startangle, 360) or IsRangeVisible(0, endangle)
 	end
-	tspan = NormalizeAngle(clipangle - angle2)
-	if tspan > 2*clipangle then
-		tspan = NormalizeAngle(tspan - 2*clipangle)
-		if tspan >= span then return end
-		angle2 = NormalizeAngle(-clipangle)
-	end
-	
-	local x1 = viewangletox(angle1)
-	local x2 = viewangletox(angle2)
-	if x1 == x2 then return end
-	
-	local backsector = line.backsector
-	if not backsector or backsector.ceilingheight <= frontsector.floorheight or backsector.floorheight >= frontsector.ceilingheight then
-		R_ClipSolidWallSegment(x1, x2-1)
-		return
-	end
-	if backsector.ceilingheight ~= frontsector.ceilingheight or backsector.floorheight ~= frontsector.ceilingheight then
-		R_ClipPassWallSegment (x1, x2-1)
-		return
-	end
-	if backsector.ceilingpic == frontsector.ceilingpic
-	and backsector.floorpic == frontsector.floorpic
-	and backsector.lightlevel == frontsector.lightlevel
-	and curline.side.midtexture == "-" then
-		return
-	end
-	R_ClipPassWallSegment (x1, x2-1)
+	return IsRangeVisible(startangle, endangle)
 end
 
 local checkcoord = {
@@ -180,50 +112,90 @@ local checkcoord = {
 
 function R_CheckBBox(bspcoord)
 	local boxx, boxy
-	if viewx <= bspcoord.left then boxx = 0 elseif viewx < bspcoord.right then boxx = 1 else boxx = 2 end
-	if viewy >= bspcoord.top then boxy = 0 elseif viewy > bspcoord.bottom then boxy = 1 else boxy = 2 end
+	if view.x <= bspcoord.left then boxx = 0 elseif view.x < bspcoord.right then boxx = 1 else boxx = 2 end
+	if view.y >= bspcoord.top then boxy = 0 elseif view.y > bspcoord.bottom then boxy = 4 else boxy = 8 end
 	
-	local boxpos = bit.lshift(boxy, 2) + boxx
+	local boxpos = boxy + boxx
 	if boxpos == 5 then return true end
 	
-	local x1 = bspcoord[checkcoord[boxpos+1][1]]
-	local y1 = bspcoord[checkcoord[boxpos+1][2]]
-	local x2 = bspcoord[checkcoord[boxpos+1][3]]
-	local y2 = bspcoord[checkcoord[boxpos+1][4]]
+	local check = checkcoord[boxpos+1]
 	
-	local angle1 = NormalizeAngle(R_PointToAngle(x1, y1) - viewangle)
-	local angle2 = NormalizeAngle(R_PointToAngle(x2, y2) - viewangle)
+	local x1 = bspcoord[check[1]]
+	local y1 = bspcoord[check[2]]
+	local x2 = bspcoord[check[3]]
+	local y2 = bspcoord[check[4]]
 	
-	span = NormalizeAngle(angle1 - angle2)
-	if span >= 180 then return true end
+	local angle1 = R_PointToAngle(x1, y1)
+	local angle2 = R_PointToAngle(x2, y2)
+	
+	return SafeCheckRange(angle2, angle1)
+end
 
-	local tspan = NormalizeAngle(angle1 + clipangle)
-	if tspan > 2*clipangle then
-		tspan = NormalizeAngle(tspan - 2*clipangle)
-		if tspan >= span then return false end
-		angle1 = clipangle
+local function CheckClip(seg, frontsector, backsector)
+	if backsector.ceilingheight <= frontsector.floorheight then
+		--if seg.side.toptexture == "-" then return false end
+		--if backsector.ceilingpic == "F_SKY1" and frontsector.ceilingpic == "F_SKY1" then return false end
+		return true
 	end
-	tspan = NormalizeAngle(clipangle - angle2)
-	if tspan > 2*clipangle then
-		tspan = NormalizeAngle(tspan - 2*clipangle)
-		if tspan >= span then return false end
-		angle2 = NormalizeAngle(-clipangle)
+	if frontsector.ceilingheight <= backsector.floorheight then
+		--if seg.side.bottomtexture == "-" then return false end
+		--if backsector.ceilingpic == "F_SKY1" and frontsector.ceilingpic == "F_SKY1" then return false end
+		return true
 	end
+	if backsector.ceilingheight <= backsector.floorheight then
+		--if backsector.ceilingheight < frontsector.floorheight and seg.side.toptexture == "-" then return false end
+		--if backsector.floorheight > frontsector.floorheight and seg.side.bottomtexture == "-" then return false end
+		--if backsector.ceilingpic == "F_SKY1" and frontsector.ceilingpic == "F_SKY1" then return false end
+		--if backsector.floorpic == "F_SKY1" and frontsector.floorpic == "F_SKY1" then return false end
+		return true
+	end
+	return false
+end
+
+local renderlists = {}
+
+local function AddWall(seg)
+	local sidedef = seg.side
+	for _, mesh in pairs(Map.SideMeshes[sidedef.id]) do
+		mesh.visible = true
+	end
+	--TODO: Add wall to render list
+end
+
+function R_AddLine(line)
+	curline = line
+	local angle1 = R_PointToAngle(line.v1.x, line.v1.y)
+	local angle2 = R_PointToAngle(line.v2.x, line.v2.y)
 	
-	local sx1 = viewangletox(angle1)
-	local sx2 = viewangletox(angle2)
-	if sx1 == sx2 then return false end
-	sx2 = sx2 - 1
-	for i = 1, #solidsegs do
-		local solidseg = solidsegs[i]
-		if sx1 >= solidseg.first and sx2 <= solidseg.last then return false end
+	if NormalizeAngle(angle2 - angle1) < 180 or not line.linedef then return end
+	if not SafeCheckRange(angle2, angle1) then return end
+	if not line.backsector then
+		SafeAddClipRange(angle2, angle1)
+	else
+		if line.frontsector == line.backsector and line.side.midtexture == "-" then return end
+		if CheckClip(line, line.frontsector, line.backsector) then SafeAddClipRange(angle2, angle1) end
 	end
-	return true
+	line.linedef.flags = bit.bor(line.linedef.flags, ML_MAPPED)
+	AddWall(line)
+end
+
+local function AddSector(sector)
+	local sectorid = sector.id
+	for _, mesh in ipairs(Map.FloorMeshes[sectorid]) do
+		if mesh.floor then mesh.visible = true end
+	end
+	for _, mesh in ipairs(Map.CeilMeshes[sectorid]) do
+		if mesh.ceil then mesh.visible = true end
+	end
+	--TODO: add floor and ceiling to draw list
 end
 
 function R_Subsector(num)
 	local sub = Map.Subsectors[num+1]
-	frontsector = sub.sector
+	if sub.sector.validcount ~= validcount then
+		sub.sector.validcount = validcount
+		AddSector(sub.sector)
+	end
 	for i = 1, sub.numsegs do
 		R_AddLine(sub.segs[i])
 	end
@@ -235,11 +207,15 @@ function R_RenderBSPNode(bspnum)
 		return
 	end
 	local bsp = Map.Nodes[bspnum+1]
-	local side = R_PointOnSide(viewx, viewy, bsp)
+	local side = R_PointOnSide(view.x, view.y, bsp)
 	R_RenderBSPNode(bsp.children[side+1])
 	local otherside = bit.bxor(side, 1)
 	if R_CheckBBox(bsp.bbox[otherside+1]) then R_RenderBSPNode(bsp.children[otherside+1]) end
 end
+
+local draw3dsky = false
+hook.Add("PreDrawSkyBox", "DOOM.SkyCheck", function() draw3dsky = true end)
+hook.Add("PostDrawSkyBox", "DOOM.SkyCheck", function() draw3dsky = false end)
 
 local NewRender = CreateClientConVar("doom_map_cl_newrender", 0, false, false)
 
@@ -251,31 +227,40 @@ cvars.AddChangeCallback("doom_map_cl_newrender", function(name, oldvalue, newval
 			mesh.visible = true
 		end		
 	end
-end)
-
-hook.Add("RenderScene", "DOOM.VisibleLines", function(ViewOrigin, ViewAngles)
-	if NewRender:GetInt() > 0 then
-		if not Map or not Map.loaded then return end
-		viewx = ViewOrigin.x
-		viewy = ViewOrigin.y
-		viewz = ViewOrigin.z
-		viewangle = NormalizeAngle(ViewAngles.y)
-		for i = 1, #Map.Sidedefs do 
-			for _, mesh in pairs(Map.SideMeshes[i]) do
-				mesh.visible = false
-			end		
+	for i = 1, #Map.Sectors do
+		for _, mesh in ipairs(Map.FloorMeshes[i]) do
+			mesh.visible = true
 		end
-		--[[
-		for i = 1, #Map.Sectors do
-			for _, mesh in ipairs(Map.FloorMeshes[i]) do
-				mesh.visible = false
-			end
-			for _, mesh in ipairs(Map.CeilMeshes[i]) do
-				mesh.visible = false
-			end
+		for _, mesh in ipairs(Map.CeilMeshes[i]) do
+			mesh.visible = true
 		end
-		--]]
-		R_ClearClipSegs()
-		R_RenderBSPNode(#Map.Nodes-1)
 	end
 end)
+
+local function DrawMap(isDrawingDepth, isDrawSkybox)
+	-- isDrawSkybox only tells you if the 2d skybox is potentially visible.
+	-- it fails to act as a filter for 3d skybox passes if the map does not have a 3d skybox.
+	if draw3dsky then return end
+	if NewRender:GetInt() <= 0 then return end
+	if not Map or not Map.loaded then return end
+	
+	-- TODO: do away with this and build render lists
+	for i = 1, #Map.Sidedefs do 
+		for _, mesh in pairs(Map.SideMeshes[i]) do
+			mesh.visible = false
+		end		
+	end
+	for i = 1, #Map.Sectors do
+		for _, mesh in ipairs(Map.FloorMeshes[i]) do
+			mesh.visible = false
+		end
+		for _, mesh in ipairs(Map.CeilMeshes[i]) do
+			mesh.visible = false
+		end
+	end
+	
+	ClearClipRanges()
+	validcount = validcount + 1
+	R_RenderBSPNode(#Map.Nodes-1)
+end
+hook.Add("PreDrawOpaqueRenderables", "DOOM.DrawStaticMap", DrawMap)
