@@ -2,6 +2,7 @@ AddCSLuaFile()
 
 local error = error
 local pairs = pairs
+local print = print
 local setmetatable = setmetatable
 local tobool = tobool
 
@@ -264,10 +265,21 @@ function MAP:SetupLinedefs()
 	end
 end
 
+local function ProjectPointToLine(line, v)
+	local dx2 = line.dx * line.dx
+	local dy2 = line.dy * line.dy
+	local u = ((v.x - line.v1.x) * line.dx + (v.y - line.v1.y) * line.dy) / (dx2 + dy2)
+	v.x = line.v1.x + u * line.dx
+	v.y = line.v1.y + u * line.dy
+end
+
 function MAP:SetupSegs()
+	local hit = {}
 	for i = 1, #self.Segs do
 		local seg = self.Segs[i]
 		seg.id = i
+		if type(seg.v1) ~= "number" then print(i) end -- checking the type seems to prevent LuaJIT from screwing up
+		if type(seg.v2) ~= "number" then print(i) end
 		seg.v1 = self.Vertexes[seg.v1+1]
 		seg.v2 = self.Vertexes[seg.v2+1]
 		seg.linedef = self.Linedefs[seg.linedef+1]
@@ -275,6 +287,18 @@ function MAP:SetupSegs()
 		seg.side = seg.linedef.sidenum[side+1]
 		seg.frontsector = seg.side.sector
 		if tobool(bit.band(seg.linedef.flags, ML_TWOSIDED)) then seg.backsector = seg.linedef.sidenum[bit.bxor(side,1)+1].sector end
+		
+		-- 'slime trails' fix
+		local line = seg.linedef
+		if line.dx == 0 or line.dy == 0 then continue end
+		if not hit[seg.v1] then
+			ProjectPointToLine(line, seg.v1)
+			hit[seg.v1] = true
+		end
+		if not hit[seg.v2] then
+			ProjectPointToLine(line, seg.v2)
+			hit[seg.v2] = true
+		end
 	end
 end
 
@@ -383,6 +407,7 @@ function MAP:Setup()
 	self:CreateMeshes()
 
 	self.thinkers = {}
+	validcount = 1
 	self.loaded = true
 end
 

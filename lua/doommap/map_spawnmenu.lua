@@ -167,7 +167,7 @@ net.Receive("DOOM.WadGamemode", function(bits)
 	end
 	if maps > 0 then
 		MapList:SetDisabled(false)
-		for i = 1, maps do MapList:AddChoice(tostring(i)) end
+		for i = 1, maps do MapList:AddChoice(string.format("%2i", i)) end
 		MapList:SetValue(1)
 		MapList:ConVarChanged(1)
 	else

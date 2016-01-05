@@ -90,8 +90,6 @@ function P_LineOpening(linedef)
 	openrange = opentop - openbottom
 end
 
-validcount = 1
-
 function P_BlockLinesIterator(x, y, func)
 	local Blockmap = Map.Blockmap
 	if x < 0 or y < 0 or x >= Blockmap.bmapwidth or y >= Blockmap.bmapheight then return true end
