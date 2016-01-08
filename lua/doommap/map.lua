@@ -357,18 +357,18 @@ function MAP:SetupThings()
 	end
 end
 
-local function CreateBounds()
+function CreateBounds()
 	return {lower = Vector(32767, 32767, 32767), upper = Vector(-32768, -32768, -32768)}
 end
 
-local function AddBounds(bbox, v)
+function AddBounds(bbox, v)
 	if v.x < bbox.lower.x then bbox.lower.x = v.x end
 	if v.x > bbox.upper.x then bbox.upper.x = v.x end
 	if v.y < bbox.lower.y then bbox.lower.y = v.y end
 	if v.y > bbox.upper.y then bbox.upper.y = v.y end
 end
 
-local function AddBoundsZ(bbox, z)
+function AddBoundsZ(bbox, z)
 	if z < bbox.lower.z then bbox.lower.z = z end
 	if z > bbox.upper.z then bbox.upper.z = z end
 end

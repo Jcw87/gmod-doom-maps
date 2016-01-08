@@ -10,6 +10,7 @@ local Vector = Vector
 
 local bit = bit
 local math = math
+local mesh = mesh
 local string = string
 local table = table
 
@@ -63,6 +64,75 @@ local function intercept_vertex(startv, endv, fdiv)
 	return inter;
 end
 
+function BuildFlatVertexes(t, offset)
+	if not offset then offset = Vector(0, 0, 0) end
+	for i = 1, #t.verts do
+		local v = t.verts[i]
+		mesh.Position(v + offset)
+		mesh.Normal(t.norm)
+		mesh.Color(255, 255, 255, 255)
+		mesh.TexCoord(0, v.x / 64, -v.y / 64)
+		mesh.AdvanceVertex()
+	end
+end
+
+function BuildWallVertexes(wall, offset)
+	if not offset then offset = Vector(0, 0, 0) end
+	
+	local startu, endu, startv, endv = 0, 1, 0, 1
+	
+	if wall.texture ~= "-" then
+		local width, height
+		if not wall.flat then
+			local maptexture = GetMapTexture(wall.texture)
+			if maptexture then
+				width = maptexture.width
+				height = maptexture.height*HEIGHTCORRECTION
+				wall.material = GetTextureMaterial(wall.texture)
+			else
+				width = 256
+				height = 256*HEIGHTCORRECTION
+			end
+		else
+			width = 64
+			height = 64*HEIGHTCORRECTION
+			wall.material = GetFlatMaterial(wall.texture)
+		end
+		if wall.sky then wall.material = GetFlatMaterial("F_SKY1") end
+		startu = wall.offsetx / width
+		endu = startu + wall.length / width
+		if wall.top_pegged then
+			startv = 0 + wall.offsety / height;
+			endv = startv + (wall.top - wall.bottom) / height;
+		else
+			endv = 1 + wall.offsety / height;
+			startv = endv - (wall.top - wall.bottom) / height;
+		end
+		
+	end
+	
+	mesh.Position(Vector(wall.v1.x, wall.v1.y, wall.top) + offset)
+	mesh.Normal(wall.norm)
+	mesh.Color(255, 255, 255, 255)
+	mesh.TexCoord(0, startu, startv)
+	mesh.AdvanceVertex()
+	mesh.Position(Vector(wall.v2.x, wall.v2.y, wall.top) + offset)
+	mesh.Normal(wall.norm)
+	mesh.Color(255, 255, 255, 255)
+	mesh.TexCoord(0, endu, startv)
+	mesh.AdvanceVertex()
+	mesh.Position(Vector(wall.v2.x, wall.v2.y, wall.bottom) + offset)
+	mesh.Normal(wall.norm)
+	mesh.Color(255, 255, 255, 255)
+	mesh.TexCoord(0, endu, endv)
+	mesh.AdvanceVertex()
+	mesh.Position(Vector(wall.v1.x, wall.v1.y, wall.bottom) + offset)
+	mesh.Normal(wall.norm)
+	mesh.Color(255, 255, 255, 255)
+	mesh.TexCoord(0, startu, endv)
+	mesh.AdvanceVertex()
+end
+
 function MAP:BuildWalls(line, side)
 	local walls = {}
 	local v1, v2, thisside, otherside
@@ -82,14 +152,12 @@ function MAP:BuildWalls(line, side)
 	local thissector = thisside.sector
 	local othersector = otherside and otherside.sector
 	local wall = {}
-	wall.verts = {}
-	wall.verts[1] = v1
-	wall.verts[2] = v2
+	wall.v1 = v1
+	wall.v2 = v2
 	wall.offsetx = thisside.textureoffset
 	wall.offsety = thisside.rowoffset
-	wall.normal = side == 1 and line.normal or line.normal * -1
+	wall.norm = side == 1 and line.normal or line.normal * -1
 	wall.length = line.length
-	wall.s1id = thissector.id
 	wall.id = thisside.id
 	if otherside then
 		if thissector.maxceiling > othersector.minceiling then
@@ -104,7 +172,6 @@ function MAP:BuildWalls(line, side)
 				wall.texture = othersector.ceilingpic
 				wall.flat = true
 			end
-			wall.s2id = othersector.id
 			if othersector.ceilingpic == "F_SKY1" then wall.sky = true end
 			table.insert(walls, TableCopy(wall))
 		end
@@ -138,7 +205,6 @@ function MAP:BuildWalls(line, side)
 				wall.texture = othersector.floorpic
 				wall.flat = true
 			end
-			wall.s2id = othersector.id
 			wall.sky = false
 			if tobool(bit.band(line.flags, ML_DONTPEGBOTTOM)) then wall.offsety = wall.offsety + (thissector.ceilingheight - othersector.floorheight) end
 			table.insert(walls, TableCopy(wall))
@@ -157,79 +223,12 @@ function MAP:BuildWalls(line, side)
 		convex[2] = Vector(v1.x, v1.y, wall.bottom)
 		convex[3] = Vector(v2.x, v2.y, wall.top)
 		convex[4] = Vector(v2.x, v2.y, wall.bottom)
-		convex[5] = Vector((v1.x + v2.x)/2, (v1.y + v2.y)/2, wall.top) - wall.normal*4
+		convex[5] = Vector((v1.x + v2.x)/2, (v1.y + v2.y)/2, wall.top) - wall.norm*4
 		convex[6] = Vector(convex[5].x, convex[5].y, wall.bottom)
 		local target = wall.top_pegged and self.CeilPhys or self.FloorPhys
 		table.insert(target[thissector.id], convex)
 	end
 	return walls
-end
-
-function MAP:CreateWallTriangles(wall)
-	local triangles = {}
-	triangles.lightsector = self.Sectors[wall.s1id]
-	for i = 1, 6 do
-		triangles[i] = {}
-		triangles[i].normal = wall.normal
-	end
-
-	local startu, endu, startv, endv
-
-	if CLIENT and wall.texture ~= "-" then
-		local width, height
-		if not wall.flat then
-			local maptexture = GetMapTexture(wall.texture)
-			if maptexture then
-				width = maptexture.width
-				height = maptexture.height*HEIGHTCORRECTION
-				triangles.material = GetTextureMaterial(wall.texture)
-			else
-				width = 256
-				height = 256*HEIGHTCORRECTION
-			end
-		else
-			width = 64
-			height = 64*HEIGHTCORRECTION
-			triangles.material = GetFlatMaterial(wall.texture)
-		end
-		if wall.sky then triangles.material = GetFlatMaterial("F_SKY1") end
-		startu = wall.offsetx / width
-		endu = startu + wall.length / width
-		if wall.top_pegged then
-			startv = 0 + wall.offsety / height;
-			endv = startv + (wall.top - wall.bottom) / height;
-		else
-			endv = 1 + wall.offsety / height;
-			startv = endv - (wall.top - wall.bottom) / height;
-		end
-		
-	end
-	
-	triangles[1].pos = Vector(wall.verts[1].x, wall.verts[1].y, wall.top)
-	triangles[1].u = startu
-	triangles[1].v = startv
-
-	triangles[2].pos = Vector(wall.verts[2].x, wall.verts[2].y, wall.top)
-	triangles[2].u = endu
-	triangles[2].v = startv
-
-	triangles[3].pos = Vector(wall.verts[2].x, wall.verts[2].y, wall.bottom)
-	triangles[3].u = endu
-	triangles[3].v = endv
-
-	triangles[4].pos = Vector(wall.verts[1].x, wall.verts[1].y, wall.top)
-	triangles[4].u = startu
-	triangles[4].v = startv
-	
-	triangles[5].pos = Vector(wall.verts[2].x, wall.verts[2].y, wall.bottom)
-	triangles[5].u = endu
-	triangles[5].v = endv
-	
-	triangles[6].pos = Vector(wall.verts[1].x, wall.verts[1].y, wall.bottom)
-	triangles[6].u = startu
-	triangles[6].v = endv
-
-	return triangles
 end
 
 function MAP:PolygonClip(input, clipper)
@@ -277,32 +276,6 @@ function MAP:PolygonClip(input, clipper)
 		end
 	end
 	return out
-end
-
-function MAP:TriangulateSubsector(subsector)
-	local polygon = TableCopy(subsector.polygon)
-	local sector = subsector.sector
-	local triangles = {}
-	while #polygon >= 3 do
-		for i = 1, 3 do
-			local vertex = {}
-			vertex.pos = Vector(polygon[i].x, polygon[i].y, 0)
-			vertex.norm = fnormal
-			vertex.u = polygon[i].x / 64.0
-			vertex.v = -polygon[i].y / 64.0
-			table.insert(triangles, vertex)
-		end
-		table.remove(polygon, 2)
-	end
-	-- Check for degenerate triangles
-	for i = 1, #triangles / 3 do
-		local firstvert = (i-1)*3+1
-		local A = triangles[firstvert].pos
-		local B = triangles[firstvert+1].pos
-		local C = triangles[firstvert+2].pos
-		if ((B - A):Cross(C - A)):Length() <= 0.01 then print(string.format("degenerate triangle %i in subsector %i", i, subsector.id)) end
-	end
-	return triangles
 end
 
 function MAP:ProcessNode(node, polygon)
@@ -390,13 +363,15 @@ function MAP:CreateMeshes()
 				for j = 1, #leftwalls do
 					local wall = leftwalls[j]
 					local id, target
-					if wall.s2id then
-						id = wall.s2id
+					if rightsector then
+						id = rightsector.id
 						target = wall.texid == 2 and self.FloorMeshes or self.CeilMeshes
 					else
 						id = leftsector.id
 						target = wall.top_pegged and self.CeilMeshes or self.FloorMeshes
 					end
+					wall.s1 = leftsector
+					wall.s2 = rightsector
 					if wall.texid == 0 and rightsector.ceilingmoves and wall.top_pegged then wall.special = true end
 					if wall.texid == 1 and rightsector and (leftsector.floormoves or leftsector.ceilingmoves or rightsector.floormoves or rightsector.ceilingmoves) then wall.special = true end
 					if wall.texid == 2 and rightsector.floormoves and not wall.top_pegged then wall.special = true end
@@ -407,19 +382,15 @@ function MAP:CreateMeshes()
 							local texture = GetMapTexture(wall.texture)
 							if texture then w = texture.width h = texture.height end
 						end
-						wall.s1 = leftsector
-						wall.s2 = linedef.sidenum[2] and linedef.sidenum[2].sector
 						wall.texwidth = w
 						wall.texheight = h*HEIGHTCORRECTION
 						wall.material = wall.flat and GetFlatMaterial(wall.texture) or GetTextureMaterial(wall.texture)
 						table.insert(self.SpecialMeshes[id], wall)
 						self.SideMeshes[linedef.sidenum[1].id][wall.texid] = wall
 					else
-						local triangles = self:CreateWallTriangles(wall)
-						table.insert(target[id], triangles)
-						triangles.flat = wall.flat
-						triangles.visible = true
-						self.SideMeshes[linedef.sidenum[1].id][wall.texid] = triangles
+						table.insert(target[id], wall)
+						wall.visible = true
+						self.SideMeshes[linedef.sidenum[1].id][wall.texid] = wall
 					end
 				end
 			end
@@ -427,13 +398,15 @@ function MAP:CreateMeshes()
 				for j = 1, #rightwalls do
 					local wall = rightwalls[j]
 					local id, target
-					if wall.s2id then
-						id = wall.s2id
+					if leftsector then
+						id = leftsector.id
 						target = wall.texid == 2 and self.FloorMeshes or self.CeilMeshes
 					else
 						id = rightsector.id
 						target = wall.top_pegged and self.CeilMeshes or self.FloorMeshes
 					end
+					wall.s1 = leftsector
+					wall.s2 = rightsector
 					if wall.texid == 0 and leftsector.ceilingmoves and wall.top_pegged then wall.special = true end
 					if wall.texid == 1 and leftsector and (rightsector.floormoves or rightsector.ceilingmoves or leftsector.floormoves or leftsector.ceilingmoves) then wall.special = true end
 					if wall.texid == 2 and leftsector.floormoves and not wall.top_pegged then wall.special = true end
@@ -443,74 +416,69 @@ function MAP:CreateMeshes()
 							local texture = GetMapTexture(wall.texture)
 							if texture then w = texture.width h = texture.height end
 						end
-						wall.s1 = rightsector
-						wall.s2 = linedef.sidenum[1] and linedef.sidenum[1].sector
 						wall.texwidth = w
 						wall.texheight = h*HEIGHTCORRECTION
 						wall.material = wall.flat and GetFlatMaterial(wall.texture) or GetTextureMaterial(wall.texture)
 						table.insert(self.SpecialMeshes[id], wall)
+						self.SideMeshes[linedef.sidenum[2].id][wall.texid] = wall
 					else
-						local triangles = self:CreateWallTriangles(wall)
-						triangles.visible = true
 						table.insert(target[id], triangles)
+						wall.visible = true
+						self.SideMeshes[linedef.sidenum[2].id][wall.texid] = wall
 					end
 				end
 			end
 		end
 	end
 	
-	-- Create triangles for floor and ceiling from polygon
+	-- Create meshes and convexes for floor and ceiling from polygon
 	local fnormal = Vector(0, 0, 1)
 	local cnormal = Vector(0, 0, -1)
 	for i = 1, #self.Subsectors do
 		local subsector = self.Subsectors[i]
-		local sector = subsector.sector
-		local ftriangles = self:TriangulateSubsector(subsector)
-		local ctriangles = {}
-		for j = 1, #ftriangles do
-			ftriangles[j].pos.z = sector.floorheight
-			ftriangles[j].norm = fnormal
-			local cond = (j - 1) % 3
-			if cond == 0 then
-				ctriangles[j] = TableCopy(ftriangles[j])
-			elseif cond == 1 then
-				ctriangles[j] = TableCopy(ftriangles[j+1])
-			elseif cond == 2 then
-				ctriangles[j] = TableCopy(ftriangles[j-1])
-			end
-			ctriangles[j].pos.z = sector.ceilingheight
-			ctriangles[j].norm = cnormal
-		end
-		ftriangles.lightsector = sector
-		ctriangles.lightsector = sector
-		ftriangles.floor = true
-		ctriangles.ceil = true
-		ftriangles.visible = true
-		ctriangles.visible = true
-		if CLIENT then
-			ftriangles.material = GetFlatMaterial(sector.floorpic)
-			ctriangles.material = GetFlatMaterial(sector.ceilingpic)
-			table.insert(self.FloorMeshes[sector.id], ftriangles)
-			table.insert(self.CeilMeshes[sector.id], ctriangles)
-		end
-
-		phys = {}
 		local poly = subsector.polygon
+		local sector = subsector.sector
+		local vertcount = #poly
+		
 		local bottom = sector.floorheight - (sector.maxfloor - FindLowestSurrounding(sector, "minfloor", sector.floorheight))
 		local top = sector.ceilingheight + (FindHighestSurrounding(sector, "maxceiling", sector.ceilingheight) - sector.minceiling)
 		if bottom == sector.floorheight then bottom = bottom - 8 end
 		if top == sector.ceilingheight then top = top + 8 end
 		local convex = {}
-		for j = 1, #poly do
+		for j = 1, vertcount do
 			table.insert(convex, Vector(poly[j].x, poly[j].y, sector.floorheight))
 			table.insert(convex, Vector(poly[j].x, poly[j].y, bottom))
 		end
 		table.insert(self.FloorPhys[sector.id], convex)
 		convex = {}
-		for j = 1, #poly do
+		for j = 1, vertcount do
 			table.insert(convex, Vector(poly[j].x, poly[j].y, sector.ceilingheight))
 			table.insert(convex, Vector(poly[j].x, poly[j].y, top))
 		end
 		table.insert(self.CeilPhys[sector.id], convex)
+		
+		if SERVER then continue end
+		
+		local fmesh = {}
+		local cmesh = {}
+		fmesh.verts = {}
+		cmesh.verts = {}
+		for j = 1, vertcount do
+			local v = poly[j]
+			fmesh.verts[j] = Vector(v.x, v.y, sector.floorheight)
+			cmesh.verts[vertcount-j+1] = Vector(v.x, v.y, sector.ceilingheight)
+		end
+		fmesh.norm = fnormal
+		cmesh.norm = cnormal
+		fmesh.s1 = sector
+		cmesh.s1 = sector
+		fmesh.floor = true
+		cmesh.ceil = true
+		fmesh.visible = true
+		cmesh.visible = true
+		fmesh.material = GetFlatMaterial(sector.floorpic)
+		cmesh.material = GetFlatMaterial(sector.ceilingpic)
+		table.insert(self.FloorMeshes[sector.id], fmesh)
+		table.insert(self.CeilMeshes[sector.id], cmesh)
 	end
 end

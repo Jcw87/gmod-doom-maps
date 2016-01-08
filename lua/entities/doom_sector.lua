@@ -55,48 +55,41 @@ function ENT:Setup()
 	if CLIENT then
 		self.specialmeshes = self.Map.SpecialMeshes[sectorid]
 		self.meshes = floor and self.Map.FloorMeshes[sectorid] or self.Map.CeilMeshes[sectorid]
-		self:OffsetMesh()
-		local lower = Vector(32767, 32767, 32767)
-		local upper = Vector(-32768, -32768, -32768)
+
+		local bbox = DOOM.CreateBounds()
 		for i = 1, #self.meshes do
 			local submesh = self.meshes[i]
-			for j = 1, #submesh do
-				local pos = submesh[j].pos
-				lower.x = math.min(lower.x, pos.x)
-				upper.x = math.max(upper.x, pos.x)
-				lower.y = math.min(lower.y, pos.y)
-				upper.y = math.max(upper.y, pos.y)
-				lower.z = math.min(lower.z, pos.z)
-				upper.z = math.max(upper.z, pos.z)
-			end
-		end
-		lower.z = math.min(lower.z, (DOOM.FindLowestSurrounding(self.sector, "minfloor") - self.sector.maxfloor), self.sector.minfloor - self.offset.z)
-		upper.z = math.max(upper.z, (DOOM.FindHighestSurrounding(self.sector, "maxceiling") - self.sector.minceiling), self.sector.maxceiling - self.offset.z)
-		self:SetRenderBounds(lower, upper)
-		self.matrix = Matrix()
-		--[[
-		-- Join triangle tables that can be rendered together
-		local j = 1
-		while j <= #self.meshes do
-			local m1 = self.meshes[j]
-			local k = j + 1
-			while k <= #self.meshes do
-				local m2 = self.meshes[k]
-				if m1.material == m2.material and m1.floor == m2.floor and m1.lightsector.id == m2.lightsector.id then
-					TableAdd(m1, m2)
-					table.remove(self.meshes, k)
-					k = k - 1
+			if submesh.verts then
+				for j = 1, #submesh.verts do
+					local pos = submesh.verts[j]
+					DOOM.AddBounds(bbox, pos)
+					DOOM.AddBoundsZ(bbox, pos.z)
 				end
-				k = k + 1
+			else
+				DOOM.AddBounds(bbox, submesh.v1)
+				DOOM.AddBounds(bbox, submesh.v2)
+				DOOM.AddBoundsZ(bbox, submesh.top)
+				DOOM.AddBoundsZ(bbox, submesh.bottom)
 			end
-			j = j + 1
 		end
-		--]]
+		bbox.lower.z = math.min(bbox.lower.z, (DOOM.FindLowestSurrounding(self.sector, "minfloor") - self.sector.maxfloor), self.sector.minfloor)
+		bbox.upper.z = math.max(bbox.upper.z, (DOOM.FindHighestSurrounding(self.sector, "maxceiling") - self.sector.minceiling), self.sector.maxceiling)
+		self:SetRenderBounds(bbox.lower - self.offset, bbox.upper - self.offset)
+		self.matrix = Matrix()
+
 		for i = 1, #self.meshes do
 			local submesh = self.meshes[i]
-			local mesh = Mesh()
-			mesh:BuildFromTriangles(submesh)
-			submesh.mesh = mesh
+			local m = Mesh()
+			if submesh.verts then
+				mesh.Begin(m, MATERIAL_POLYGON, #submesh.verts)
+				DOOM.BuildFlatVertexes(submesh, -self.offset)
+				mesh.End()
+			else
+				mesh.Begin(m, MATERIAL_QUADS, 1)
+				DOOM.BuildWallVertexes(submesh, -self.offset)
+				mesh.End()
+			end
+			submesh.mesh = m
 		end
 		-- Positions get messed up slightly, fix them
 		timer.Simple(0.2, function() if IsValid(self) then self:SetPos(self.offset) end end)
@@ -175,17 +168,6 @@ function ENT:Think()
 	end
 end
 
-function ENT:OffsetMesh()
-	if self.meshes.offset then return end
-	for i = 1, #self.meshes do
-		local submesh = self.meshes[i]
-		for j = 1, #submesh do
-			submesh[j].pos = submesh[j].pos - self.offset
-		end
-	end
-	self.meshes.offset = true
-end
-
 local color = Vector(0, 0, 0)
 
 local function DrawWall(wall)
@@ -234,23 +216,23 @@ local function DrawWall(wall)
 	
 	render.SetMaterial(wall.material)
 	mesh.Begin(MATERIAL_QUADS, 1)
-	mesh.Position(Vector(wall.verts[1].x, wall.verts[1].y, wall.top))
-	mesh.Normal(wall.normal)
+	mesh.Position(Vector(wall.v1.x, wall.v1.y, wall.top))
+	mesh.Normal(wall.norm)
 	mesh.Color(light, light, light, 255)
 	mesh.TexCoord(0, startu, startv)
 	mesh.AdvanceVertex()
-	mesh.Position(Vector(wall.verts[2].x, wall.verts[2].y, wall.top))
-	mesh.Normal(wall.normal)
+	mesh.Position(Vector(wall.v2.x, wall.v2.y, wall.top))
+	mesh.Normal(wall.norm)
 	mesh.Color(light, light, light, 255)
 	mesh.TexCoord(0, endu, startv)
 	mesh.AdvanceVertex()
-	mesh.Position(Vector(wall.verts[2].x, wall.verts[2].y, wall.bottom))
-	mesh.Normal(wall.normal)
+	mesh.Position(Vector(wall.v2.x, wall.v2.y, wall.bottom))
+	mesh.Normal(wall.norm)
 	mesh.Color(light, light, light, 255)
 	mesh.TexCoord(0, endu, endv)
 	mesh.AdvanceVertex()
-	mesh.Position(Vector(wall.verts[1].x, wall.verts[1].y, wall.bottom))
-	mesh.Normal(wall.normal)
+	mesh.Position(Vector(wall.v1.x, wall.v1.y, wall.bottom))
+	mesh.Normal(wall.norm)
 	mesh.Color(light, light, light, 255)
 	mesh.TexCoord(0, startu, endv)
 	mesh.AdvanceVertex()
@@ -269,7 +251,7 @@ function ENT:Draw()
 	for i = 1, #self.meshes do
 		local submesh = self.meshes[i]
 		if not submesh.visible then continue end
-		local lightlevel = ((submesh.lightsector.lightlevel) / 256)
+		local lightlevel = ((submesh.s1.lightlevel) / 256)
 		if DOOM.IsFullbright() then lightlevel = 1 end
 		if not submesh.material then continue end
 		color.x = lightlevel
