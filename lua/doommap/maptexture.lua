@@ -282,7 +282,7 @@ local tFlatMaterials = {F_SKY1 = Material("doom/floors/f_sky1")}
 
 function GetFlatMaterial(name)
 	if tFlatMaterials[name] then return tFlatMaterials[name] end
-	local material = CreateMaterial("doom/flats/"..name, "UnlitGeneric", {["$vertexcolor"] = "1"})
+	local material = CreateMaterial("doom/flats/"..name, "LightmappedGeneric", {["$basetexture"] = "shadertest/BaseTexture"})
 	material:SetTexture("$basetexture", GetFlatTexture(name))
 	tFlatMaterials[name] = material
 	return material
@@ -292,7 +292,7 @@ local tTextureMaterials = {}
 
 function GetTextureMaterial(name)
 	if tTextureMaterials[name] then return tTextureMaterials[name] end
-	local material = CreateMaterial("doom/textures/"..name, "UnlitGeneric", {["$alphatest"] = "1", ["$vertexcolor"] = "1"})
+	local material = CreateMaterial("doom/textures/"..name, "LightmappedGeneric", {["$basetexture"] = "shadertest/BaseTexture", ["$alphatest"] = "1"})
 	material:SetTexture("$basetexture", GetMapTexture(name).texture)
 	tTextureMaterials[name] = material
 	return material

@@ -405,6 +405,12 @@ function MAP:Setup()
 
 	self:SetupBounds()
 	self:CreateMeshes()
+	
+	if CLIENT then
+		for i = 1, #self.Sectors do
+			UpdateSectorLight(self.Sectors[i])
+		end
+	end
 
 	self.thinkers = {}
 	validcount = 1

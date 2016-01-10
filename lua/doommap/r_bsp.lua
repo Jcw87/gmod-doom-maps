@@ -4,14 +4,23 @@ local tobool = tobool
 local tonumber = tonumber
 
 local CreateClientConVar = CreateClientConVar
+local GetRenderTargetEx = GetRenderTargetEx
 local ScrW = ScrW
 local Vector = Vector
 
 local bit = bit
+local cam = cam
 local cvars = cvars
 local hook = hook
 local math = math
+local render = render
+local surface = surface
 local table = table
+
+local MATERIAL_RT_DEPTH_NONE = MATERIAL_RT_DEPTH_NONE
+local RT_SIZE_NO_CHANGE = RT_SIZE_NO_CHANGE
+local IMAGE_FORMAT_RGB888 = IMAGE_FORMAT_RGB888
+local IMAGE_FORMAT_RGBA8888 = IMAGE_FORMAT_RGBA8888
 
 setfenv( 1, DOOM )
 
@@ -213,6 +222,51 @@ function R_RenderBSPNode(bspnum)
 	if R_CheckBBox(bsp.bbox[otherside+1]) then R_RenderBSPNode(bsp.children[otherside+1]) end
 end
 
+local dirtylights = {}
+local texflags = bit.bor(TEXTUREFLAGS_POINTSAMPLE, TEXTUREFLAGS_RENDERTARGET, TEXTUREFLAGS_CLAMPS,  TEXTUREFLAGS_CLAMPT)
+local lightmap = GetRenderTargetEx("doom/lightmap", 256, 256, RT_SIZE_NO_CHANGE, MATERIAL_RT_DEPTH_NONE, texflags, 0, IMAGE_FORMAT_RGB888)
+local whitelightmap = GetRenderTargetEx("doom/whitelightmap", 16, 16, RT_SIZE_NO_CHANGE, MATERIAL_RT_DEPTH_NONE, texflags, 0, IMAGE_FORMAT_RGB888)
+
+local firstframe = true
+
+local function FillWhiteLightmap()
+	if firstframe then
+		firstframe = false
+		return
+	end
+	render.PushRenderTarget(whitelightmap)
+	cam.Start2D()
+	surface.SetDrawColor(127, 127, 127, 255)
+	surface.DrawRect(0, 0, 16, 16)
+	cam.End2D()
+	render.PopRenderTarget()
+	hook.Remove("PreRender", "DOOM.WhiteLightmap")
+end
+hook.Add("PreRender", "DOOM.WhiteLightmap", FillWhiteLightmap)
+
+function UpdateSectorLight(sector)
+	dirtylights[sector] = true
+end
+
+local function UpdateLights()
+	if not Map or not Map.loaded then return end
+	render.PushRenderTarget(lightmap)
+	cam.Start2D()
+	for sector, _ in pairs(dirtylights) do
+		local id = sector.id
+		local light = math.floor(sector.lightlevel / 2)
+		local x = ((id - 1) % 256)
+		local y = math.floor((id - 1) / 256)
+		surface.SetDrawColor(light, light, light, 255)
+		surface.DrawRect( x, y, 1, 1 )
+		dirtylights[sector] = nil
+	end
+	cam.End2D()
+	render.PopRenderTarget()
+end
+
+hook.Add("PreRender", "DOOM.UpdateLights", UpdateLights)
+
 local draw3dsky = false
 hook.Add("PreDrawSkyBox", "DOOM.SkyCheck", function() draw3dsky = true end)
 hook.Add("PostDrawSkyBox", "DOOM.SkyCheck", function() draw3dsky = false end)
@@ -241,6 +295,11 @@ local function DrawMap(isDrawingDepth, isDrawSkybox)
 	-- isDrawSkybox only tells you if the 2d skybox is potentially visible.
 	-- it fails to act as a filter for 3d skybox passes if the map does not have a 3d skybox.
 	if draw3dsky then return end
+	if IsFullbright() then
+		render.SetLightmapTexture(whitelightmap)
+	else
+		render.SetLightmapTexture(lightmap)
+	end
 	if NewRender:GetInt() <= 0 then return end
 	if not Map or not Map.loaded then return end
 	

@@ -128,10 +128,10 @@ hook.Add("DOOM.OnTick", "DOOM.CrossLine", function()
 	end
 end)
 
+end
+
 hook.Add("ShouldCollide", "DOOM.MapCollide", function(ent1, ent2)
 	local class1 = ent1:GetClass()
 	local class2 = ent2:GetClass()
 	if class1 == "doom_sector" and class2 == "doom_sector" then return false end
 end)
-
-end
