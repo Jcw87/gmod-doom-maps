@@ -79,7 +79,7 @@ function ENT:Setup()
 
 		for i = 1, #self.meshes do
 			local submesh = self.meshes[i]
-			local m = Mesh()
+			local m = Mesh(submesh.material)
 			if submesh.verts then
 				mesh.Begin(m, MATERIAL_POLYGON, #submesh.verts)
 				DOOM.BuildFlatVertexes(submesh, -self.offset)
@@ -162,7 +162,9 @@ function ENT:Think()
 	local floor = self:GetFloor()
 	if floor then
 		sector.floorheight = self:GetPos().z
-		sector.lightlevel = self:GetLight()
+		local lightlevel = self:GetLight()
+		if sector.lightlevel ~= lightlevel then DOOM.UpdateSectorLight(sector) end
+		sector.lightlevel = lightlevel
 	else
 		sector.ceilingheight = self:GetPos().z
 	end
@@ -194,48 +196,10 @@ local function DrawWall(wall)
 		wall.top = wall.s1.ceilingheight
 		wall.bottom = wall.s1.floorheight
 	end
-
-	local startu, endu, startv, endv
-	startu = wall.offsetx / wall.texwidth
-	endu = startu + wall.length / wall.texwidth
-	if wall.top_pegged then
-		startv = 0 + wall.offsety / wall.texheight;
-		endv = startv + (wall.top - wall.bottom) / wall.texheight;
-	else
-		endv = 1 + wall.offsety / wall.texheight;
-		startv = endv - (wall.top - wall.bottom) / wall.texheight;
-	end
-	
-	local light = wall.s1.lightlevel
-	if DOOM.IsFullbright() then light = 255 end
-	
-	color.x = 1
-	color.y = 1
-	color.z = 1
-	wall.material:SetVector("$color", color)
 	
 	render.SetMaterial(wall.material)
 	mesh.Begin(MATERIAL_QUADS, 1)
-	mesh.Position(Vector(wall.v1.x, wall.v1.y, wall.top))
-	mesh.Normal(wall.norm)
-	mesh.Color(light, light, light, 255)
-	mesh.TexCoord(0, startu, startv)
-	mesh.AdvanceVertex()
-	mesh.Position(Vector(wall.v2.x, wall.v2.y, wall.top))
-	mesh.Normal(wall.norm)
-	mesh.Color(light, light, light, 255)
-	mesh.TexCoord(0, endu, startv)
-	mesh.AdvanceVertex()
-	mesh.Position(Vector(wall.v2.x, wall.v2.y, wall.bottom))
-	mesh.Normal(wall.norm)
-	mesh.Color(light, light, light, 255)
-	mesh.TexCoord(0, endu, endv)
-	mesh.AdvanceVertex()
-	mesh.Position(Vector(wall.v1.x, wall.v1.y, wall.bottom))
-	mesh.Normal(wall.norm)
-	mesh.Color(light, light, light, 255)
-	mesh.TexCoord(0, startu, endv)
-	mesh.AdvanceVertex()
+	DOOM.BuildWallVertexes(wall)
 	mesh.End()
 end
 
@@ -251,13 +215,7 @@ function ENT:Draw()
 	for i = 1, #self.meshes do
 		local submesh = self.meshes[i]
 		if not submesh.visible then continue end
-		local lightlevel = ((submesh.s1.lightlevel) / 256)
-		if DOOM.IsFullbright() then lightlevel = 1 end
 		if not submesh.material then continue end
-		color.x = lightlevel
-		color.y = lightlevel
-		color.z = lightlevel
-		submesh.material:SetVector("$color", color)
 		if not material then render.SetMaterial(submesh.material) end
 		submesh.mesh:Draw()
 	end

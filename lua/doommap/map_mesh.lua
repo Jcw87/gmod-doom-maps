@@ -66,47 +66,37 @@ end
 
 function BuildFlatVertexes(t, offset)
 	if not offset then offset = Vector(0, 0, 0) end
+	local lightsector = t.s1
+	local lightx = ((lightsector.id - 1) % 256) + 0.5
+	local lighty = math.floor((lightsector.id - 1) / 256) + 0.5
 	for i = 1, #t.verts do
 		local v = t.verts[i]
 		mesh.Position(v + offset)
 		mesh.Normal(t.norm)
 		mesh.Color(255, 255, 255, 255)
 		mesh.TexCoord(0, v.x / 64, -v.y / 64)
+		mesh.TexCoord(1, lightx/256, lighty/256)
 		mesh.AdvanceVertex()
 	end
 end
 
 function BuildWallVertexes(wall, offset)
 	if not offset then offset = Vector(0, 0, 0) end
+	local lightsector = wall.s1
+	local lightx = ((lightsector.id - 1) % 256) + 0.5
+	local lighty = math.floor((lightsector.id - 1) / 256) + 0.5
 	
 	local startu, endu, startv, endv = 0, 1, 0, 1
 	
 	if wall.texture ~= "-" then
-		local width, height
-		if not wall.flat then
-			local maptexture = GetMapTexture(wall.texture)
-			if maptexture then
-				width = maptexture.width
-				height = maptexture.height*HEIGHTCORRECTION
-				wall.material = GetTextureMaterial(wall.texture)
-			else
-				width = 256
-				height = 256*HEIGHTCORRECTION
-			end
-		else
-			width = 64
-			height = 64*HEIGHTCORRECTION
-			wall.material = GetFlatMaterial(wall.texture)
-		end
-		if wall.sky then wall.material = GetFlatMaterial("F_SKY1") end
-		startu = wall.offsetx / width
-		endu = startu + wall.length / width
+		startu = wall.offsetx / wall.texwidth
+		endu = startu + wall.length / wall.texwidth
 		if wall.top_pegged then
-			startv = 0 + wall.offsety / height;
-			endv = startv + (wall.top - wall.bottom) / height;
+			startv = 0 + wall.offsety / wall.texheight;
+			endv = startv + (wall.top - wall.bottom) / wall.texheight;
 		else
-			endv = 1 + wall.offsety / height;
-			startv = endv - (wall.top - wall.bottom) / height;
+			endv = 1 + wall.offsety / wall.texheight;
+			startv = endv - (wall.top - wall.bottom) / wall.texheight;
 		end
 		
 	end
@@ -115,21 +105,25 @@ function BuildWallVertexes(wall, offset)
 	mesh.Normal(wall.norm)
 	mesh.Color(255, 255, 255, 255)
 	mesh.TexCoord(0, startu, startv)
+	mesh.TexCoord(1, lightx/256, lighty/256)
 	mesh.AdvanceVertex()
 	mesh.Position(Vector(wall.v2.x, wall.v2.y, wall.top) + offset)
 	mesh.Normal(wall.norm)
 	mesh.Color(255, 255, 255, 255)
 	mesh.TexCoord(0, endu, startv)
+	mesh.TexCoord(1, lightx/256, lighty/256)
 	mesh.AdvanceVertex()
 	mesh.Position(Vector(wall.v2.x, wall.v2.y, wall.bottom) + offset)
 	mesh.Normal(wall.norm)
 	mesh.Color(255, 255, 255, 255)
 	mesh.TexCoord(0, endu, endv)
+	mesh.TexCoord(1, lightx/256, lighty/256)
 	mesh.AdvanceVertex()
 	mesh.Position(Vector(wall.v1.x, wall.v1.y, wall.bottom) + offset)
 	mesh.Normal(wall.norm)
 	mesh.Color(255, 255, 255, 255)
 	mesh.TexCoord(0, startu, endv)
+	mesh.TexCoord(1, lightx/256, lighty/256)
 	mesh.AdvanceVertex()
 end
 
@@ -376,15 +370,16 @@ function MAP:CreateMeshes()
 					if wall.texid == 1 and rightsector and (leftsector.floormoves or leftsector.ceilingmoves or rightsector.floormoves or rightsector.ceilingmoves) then wall.special = true end
 					if wall.texid == 2 and rightsector.floormoves and not wall.top_pegged then wall.special = true end
 					if linedef.special == 48 then wall.scrollx = true wall.special = true end
+					local w, h = 64, 64
+					if not wall.flat then
+						local texture = GetMapTexture(wall.texture)
+						if texture then w = texture.width h = texture.height end
+					end
+					wall.texwidth = w
+					wall.texheight = h*HEIGHTCORRECTION
+					wall.material = wall.flat and GetFlatMaterial(wall.texture) or GetTextureMaterial(wall.texture)
+					if wall.sky then wall.material = GetFlatMaterial("F_SKY1") end
 					if not wall.sky and wall.special then
-						local w, h = 64, 64
-						if not wall.flat then
-							local texture = GetMapTexture(wall.texture)
-							if texture then w = texture.width h = texture.height end
-						end
-						wall.texwidth = w
-						wall.texheight = h*HEIGHTCORRECTION
-						wall.material = wall.flat and GetFlatMaterial(wall.texture) or GetTextureMaterial(wall.texture)
 						table.insert(self.SpecialMeshes[id], wall)
 						self.SideMeshes[linedef.sidenum[1].id][wall.texid] = wall
 					else
@@ -405,24 +400,25 @@ function MAP:CreateMeshes()
 						id = rightsector.id
 						target = wall.top_pegged and self.CeilMeshes or self.FloorMeshes
 					end
-					wall.s1 = leftsector
-					wall.s2 = rightsector
+					wall.s1 = rightsector
+					wall.s2 = leftsector
 					if wall.texid == 0 and leftsector.ceilingmoves and wall.top_pegged then wall.special = true end
 					if wall.texid == 1 and leftsector and (rightsector.floormoves or rightsector.ceilingmoves or leftsector.floormoves or leftsector.ceilingmoves) then wall.special = true end
 					if wall.texid == 2 and leftsector.floormoves and not wall.top_pegged then wall.special = true end
+					local w, h = 64, 64
+					if not wall.flat then
+						local texture = GetMapTexture(wall.texture)
+						if texture then w = texture.width h = texture.height end
+					end
+					wall.texwidth = w
+					wall.texheight = h*HEIGHTCORRECTION
+					wall.material = wall.flat and GetFlatMaterial(wall.texture) or GetTextureMaterial(wall.texture)
+					if wall.sky then wall.material = GetFlatMaterial("F_SKY1") end
 					if not wall.sky and wall.special then
-						local w, h = 64, 64
-						if not wall.flat then
-							local texture = GetMapTexture(wall.texture)
-							if texture then w = texture.width h = texture.height end
-						end
-						wall.texwidth = w
-						wall.texheight = h*HEIGHTCORRECTION
-						wall.material = wall.flat and GetFlatMaterial(wall.texture) or GetTextureMaterial(wall.texture)
 						table.insert(self.SpecialMeshes[id], wall)
 						self.SideMeshes[linedef.sidenum[2].id][wall.texid] = wall
 					else
-						table.insert(target[id], triangles)
+						table.insert(target[id], wall)
 						wall.visible = true
 						self.SideMeshes[linedef.sidenum[2].id][wall.texid] = wall
 					end
