@@ -55,6 +55,7 @@ local function AddClipRange(startangle, endangle)
 			if range.endangle < endangle then range.endangle = endangle end
 			local range2 = clipranges[i+1]
 			while range2 and range2.startangle <= range.endangle do
+				if range2.endangle > range.endangle then range.endangle = range2.endangle end
 				table.remove(clipranges, i+1)
 				range2 = clipranges[i+1]
 			end
