@@ -31,10 +31,6 @@ local MATERIAL_RT_DEPTH_SHARED = MATERIAL_RT_DEPTH_SHARED
 local RT_SIZE_DEFAULT = RT_SIZE_DEFAULT
 local RT_SIZE_NO_CHANGE = RT_SIZE_NO_CHANGE
 local RT_SIZE_OFFSCREEN = RT_SIZE_OFFSCREEN
-local STENCIL_ALWAYS = STENCIL_ALWAYS
-local STENCIL_EQUAL = STENCIL_EQUAL
-local STENCIL_KEEP = STENCIL_KEEP
-local STENCIL_REPLACE = STENCIL_REPLACE
 
 local IMAGE_FORMAT_RGB888 = IMAGE_FORMAT_RGB888
 local IMAGE_FORMAT_RGBA8888 = IMAGE_FORMAT_RGBA8888
@@ -327,20 +323,14 @@ function MAPTEXTURE:AllocateTexture()
 end
 
 function MAPTEXTURE:WriteToTexture()
-	local oldRT = render.GetRenderTarget()
 	local oldW, oldH = ScrW(), ScrH()
 	self.ScaleX = self.texture:Width()/self.width
 	self.ScaleY = self.texture:Height()/self.height
-	render.SetRenderTarget(self.texture )
+	render.PushRenderTarget( self.texture )
 	render.SetViewPort( 0, 0, self.texture:Width(), self.texture:Height() )
-	render.Clear( 0, 0, 0, 255, true, true )
-
-	render.SetStencilEnable( true )
-	render.SetStencilTestMask( 1 )
-	render.SetStencilWriteMask( 1 )
-	render.SetStencilReferenceValue( 1 )
-	render.SetStencilCompareFunction( STENCIL_ALWAYS )
-	render.SetStencilPassOperation( STENCIL_REPLACE )
+	
+	render.OverrideAlphaWriteEnable(true, true)
+	render.Clear( 0, 0, 0, 0, true, true )
 
 	render.PushFilterMin(1)
 	render.SetBlend( 1 )
@@ -349,13 +339,10 @@ function MAPTEXTURE:WriteToTexture()
 	local status, msg = pcall( self.Draw, self )
 	cam.End2D()
 	render.PopFilterMin()
-
-	render.SetStencilReferenceValue( 0 )
-	render.SetStencilCompareFunction( STENCIL_EQUAL )
-	render.ClearBuffersObeyStencil( 0, 0, 0, 0, true )
-	render.SetStencilEnable( false )
 	
-	render.SetRenderTarget( oldRT )
+	render.OverrideAlphaWriteEnable(false)
+	
+	render.PopRenderTarget()
 	render.SetViewPort( 0, 0, oldW, oldH )
 	if not status then error(msg) end
 end
