@@ -205,21 +205,20 @@ end
 
 function ENT:Draw()
 	if not self.matrix then return end
-	local override = self:GetMaterial()
-	local material
-	if override ~= "" then material = Material(override) render.SetMaterial(material) end
 	self.matrix:SetAngles(self:GetAngles())
 	self.matrix:SetTranslation(self:GetPos())
 	cam.PushModelMatrix(self.matrix)
-	render.SuppressEngineLighting( true )
+	--render.SuppressEngineLighting( true )
+	--render.SetAmbientLight(255, 255, 255)
 	for i = 1, #self.meshes do
 		local submesh = self.meshes[i]
 		if not submesh.visible then continue end
 		if not submesh.material then continue end
-		if not material then render.SetMaterial(submesh.material) end
+		if submesh.sky then continue end
+		render.SetMaterial(submesh.material)
 		submesh.mesh:Draw()
 	end
-	render.SuppressEngineLighting( false )
+	--render.SuppressEngineLighting( false )
 	cam.PopModelMatrix()
 	local floor = self:GetFloor()
 	for i = 1, #self.specialmeshes do

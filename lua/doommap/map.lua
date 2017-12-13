@@ -63,8 +63,8 @@ local function ReadThings( fstream, tLumpInfo )
 		self[i].x = fstream:ReadShort()
 		self[i].y = fstream:ReadShort()
 		self[i].angle = fstream:ReadShort()
-		self[i].type = fstream:ReadShort()
-		self[i].options = fstream:ReadShort()
+		self[i].type = ReadUShort( fstream )
+		self[i].options = ReadUShort( fstream )
 	end
 	return self
 end
@@ -74,14 +74,14 @@ local function ReadLinedefs( fstream, tLumpInfo )
 	local total = tLumpInfo.iSize / 14
 	for i = 1, total do
 		self[i] = {}
-		self[i].v1 = fstream:ReadShort()
-		self[i].v2 = fstream:ReadShort()
-		self[i].flags = fstream:ReadShort()
-		self[i].special = fstream:ReadShort()
-		self[i].tag = fstream:ReadShort()
+		self[i].v1 = ReadUShort( fstream )
+		self[i].v2 = ReadUShort( fstream )
+		self[i].flags = ReadUShort( fstream )
+		self[i].special = ReadUShort( fstream )
+		self[i].tag = ReadUShort( fstream )
 		self[i].sidenum = {}
-		self[i].sidenum[1] = fstream:ReadShort()
-		self[i].sidenum[2] = fstream:ReadShort()
+		self[i].sidenum[1] = ReadUShort( fstream )
+		self[i].sidenum[2] = ReadUShort( fstream )
 	end
 	return self
 end
@@ -117,11 +117,11 @@ local function ReadSegs( fstream, tLumpInfo )
 	local total = tLumpInfo.iSize / 12
 	for i = 1, total do
 		self[i] = {}
-		self[i].v1 = fstream:ReadShort()
-		self[i].v2 = fstream:ReadShort()
+		self[i].v1 = ReadUShort( fstream )
+		self[i].v2 = ReadUShort( fstream )
 		self[i].angle = fstream:ReadShort()
-		self[i].linedef = fstream:ReadShort()
-		self[i].side = fstream:ReadShort()
+		self[i].linedef = ReadUShort( fstream )
+		self[i].side = ReadUShort( fstream )
 		self[i].offset = fstream:ReadShort()
 	end
 	return self
@@ -172,8 +172,8 @@ local function ReadSectors( fstream, tLumpInfo )
 		self[i].floorpic = string.upper(string.TrimRight(fstream:Read( 8 ), "\0"))
 		self[i].ceilingpic = string.upper(string.TrimRight(fstream:Read( 8 ), "\0"))
 		self[i].lightlevel = fstream:ReadShort()
-		self[i].special = fstream:ReadShort()
-		self[i].tag = fstream:ReadShort()
+		self[i].special = ReadUShort( fstream )
+		self[i].tag = ReadUShort( fstream )
 	end
 	return self
 end
@@ -252,9 +252,9 @@ function MAP:SetupLinedefs()
 		linedef.bbox.bottom = math.min(linedef.v1.y, linedef.v2.y)
 		linedef.bbox.top = math.max(linedef.v1.y, linedef.v2.y)
 		local sideindex = linedef.sidenum[1]
-		linedef.sidenum[1] = (sideindex ~= -1) and self.Sidedefs[sideindex+1] or nil
+		linedef.sidenum[1] = (sideindex ~= 65535) and self.Sidedefs[sideindex+1] or nil
 		sideindex = linedef.sidenum[2]
-		linedef.sidenum[2] = (sideindex ~= -1) and self.Sidedefs[sideindex+1] or nil
+		linedef.sidenum[2] = (sideindex ~= 65535) and self.Sidedefs[sideindex+1] or nil
 		if linedef.sidenum[1] then linedef.frontsector = linedef.sidenum[1].sector end
 		if linedef.sidenum[2] then linedef.backsector = linedef.sidenum[2].sector end
 		if linedef.frontsector then table.insert(linedef.frontsector.lines, linedef) end

@@ -4,6 +4,7 @@ local tobool = tobool
 local tonumber = tonumber
 
 local CreateClientConVar = CreateClientConVar
+local EyePos = EyePos
 local GetRenderTargetEx = GetRenderTargetEx
 local ScrW = ScrW
 local Vector = Vector
@@ -168,6 +169,8 @@ local function AddWall(seg)
 	local sidedef = seg.side
 	for _, mesh in pairs(Map.SideMeshes[sidedef.id]) do
 		mesh.visible = true
+		if not renderlists[mesh.texture] then renderlists[mesh.texture] = {} end
+		--table.insert(renderlists[mesh.texture], mesh)
 	end
 	--TODO: Add wall to render list
 end
@@ -192,10 +195,19 @@ end
 local function AddSector(sector)
 	local sectorid = sector.id
 	for _, mesh in ipairs(Map.FloorMeshes[sectorid]) do
-		if mesh.floor then mesh.visible = true end
+		if mesh.floor then
+			mesh.visible = true
+			if not renderlists[mesh.texture] then renderlists[mesh.texture] = {} end
+			--table.insert(renderlists[mesh.texture], mesh)
+		end
+		
 	end
 	for _, mesh in ipairs(Map.CeilMeshes[sectorid]) do
-		if mesh.ceil then mesh.visible = true end
+		if mesh.ceil then
+			mesh.visible = true
+			if not renderlists[mesh.texture] then renderlists[mesh.texture] = {} end
+			--table.insert(renderlists[mesh.texture], mesh)
+		end
 	end
 	--TODO: add floor and ceiling to draw list
 end
@@ -303,6 +315,7 @@ local function DrawMap(isDrawingDepth, isDrawSkybox)
 	end
 	if NewRender:GetInt() <= 0 then return end
 	if not Map or not Map.loaded then return end
+	--view = EyePos()
 	
 	-- TODO: do away with this and build render lists
 	for i = 1, #Map.Sidedefs do 
@@ -317,6 +330,9 @@ local function DrawMap(isDrawingDepth, isDrawSkybox)
 		for _, mesh in ipairs(Map.CeilMeshes[i]) do
 			mesh.visible = false
 		end
+	end
+	for texture, meshes in pairs(renderlists) do
+		table.Empty(meshes)
 	end
 	
 	ClearClipRanges()

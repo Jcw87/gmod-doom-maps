@@ -64,6 +64,53 @@ local function intercept_vertex(startv, endv, fdiv)
 	return inter;
 end
 
+local function PolygonClip(input, clipper)
+	local out = {}
+	local workpoly = TableCopy(input);
+	local vert
+	for i = 1, #workpoly do
+		local side = (clipper.y - workpoly[i].y) * clipper.dx - (clipper.x - workpoly[i].x) * clipper.dy
+		if side > 0 then workpoly[i].side = 1 end
+		if side < 0 then workpoly[i].side = 0 end
+		if math.abs(side) < 1 then workpoly[i].side = 2 end
+	end
+	local i = 1
+	while i <= #workpoly do
+		local startpos = i
+		local endpos = i + 1
+		if endpos == #workpoly + 1 then endpos = 1 end
+		local startv = workpoly[startpos]
+		local endv = workpoly[endpos]
+		if startv.side ~= 2 and endv.side ~= 2 and startv.side ~= endv.side then
+			local newvert = intercept_vertex(startv, endv, clipper)
+			if not newvert then
+				-- Abort clipping
+				out[1] = TableCopy(input)
+				out[2] = TableCopy(input)
+				return out
+			end
+			newvert.side = 2
+			table.insert(workpoly, endpos, newvert)
+			i = i + 1
+		end
+		i = i + 1
+	end
+	out[1] = TableCopy(workpoly)
+	out[2] = TableCopy(workpoly)
+	for i = 1, 2 do
+		poly = out[i];
+		local j = 1
+		while j <= #poly do
+			if poly[j].side == i-1 then
+				table.remove(poly, j)
+				j = j - 1
+			end
+			j = j + 1
+		end
+	end
+	return out
+end
+
 function BuildFlatVertexes(t, offset)
 	if not offset then offset = Vector(0, 0, 0) end
 	local lightsector = t.s1
@@ -225,55 +272,8 @@ function MAP:BuildWalls(line, side)
 	return walls
 end
 
-function MAP:PolygonClip(input, clipper)
-	local out = {}
-	local workpoly = TableCopy(input);
-	local vert
-	for i = 1, #workpoly do
-		local side = (clipper.y - workpoly[i].y) * clipper.dx - (clipper.x - workpoly[i].x) * clipper.dy
-		if side > 0 then workpoly[i].side = 1 end
-		if side < 0 then workpoly[i].side = 0 end
-		if math.abs(side) < 1 then workpoly[i].side = 2 end
-	end
-	local i = 1
-	while i <= #workpoly do
-		local startpos = i
-		local endpos = i + 1
-		if endpos == #workpoly + 1 then endpos = 1 end
-		local startv = workpoly[startpos]
-		local endv = workpoly[endpos]
-		if startv.side ~= 2 and endv.side ~= 2 and startv.side ~= endv.side then
-			local newvert = intercept_vertex(startv, endv, clipper)
-			if not newvert then
-				-- Abort clipping
-				out[1] = TableCopy(input)
-				out[2] = TableCopy(input)
-				return out
-			end
-			newvert.side = 2
-			table.insert(workpoly, endpos, newvert)
-			i = i + 1
-		end
-		i = i + 1
-	end
-	out[1] = TableCopy(workpoly)
-	out[2] = TableCopy(workpoly)
-	for i = 1, 2 do
-		poly = out[i];
-		local j = 1
-		while j <= #poly do
-			if poly[j].side == i-1 then
-				table.remove(poly, j)
-				j = j - 1
-			end
-			j = j + 1
-		end
-	end
-	return out
-end
-
 function MAP:ProcessNode(node, polygon)
-	local clipped = self:PolygonClip(polygon, node)
+	local clipped = PolygonClip(polygon, node)
 	for i = 1, 2 do
 		local nextnode = node.children[i]
 		if tobool(bit.band(nextnode, NF_SUBSECTOR)) then
@@ -285,7 +285,7 @@ function MAP:ProcessNode(node, polygon)
 				local v1 = seg.v1
 				local v2 = seg.v2
 				local clipper = {x = v1.x, y = v1.y, dx = v2.x - v1.x, dy = v2.y - v1.y}
-				clipped2 = self:PolygonClip(polygon, clipper)
+				clipped2 = PolygonClip(polygon, clipper)
 				polygon = clipped2[1];
 			end
 			subsector.polygon = polygon;
@@ -472,8 +472,12 @@ function MAP:CreateMeshes()
 		cmesh.ceil = true
 		fmesh.visible = true
 		cmesh.visible = true
-		fmesh.material = GetFlatMaterial(sector.floorpic)
-		cmesh.material = GetFlatMaterial(sector.ceilingpic)
+		fmesh.texture = sector.floorpic
+		cmesh.texture = sector.ceilingpic
+		fmesh.material = GetFlatMaterial(fmesh.texture)
+		cmesh.material = GetFlatMaterial(cmesh.texture)
+		if fmesh.texture == "F_SKY1" then fmesh.sky = true end
+		if cmesh.texture == "F_SKY1" then cmesh.sky = true end
 		table.insert(self.FloorMeshes[sector.id], fmesh)
 		table.insert(self.CeilMeshes[sector.id], cmesh)
 	end
