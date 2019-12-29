@@ -40,11 +40,7 @@ if type(ipairs) ~= "function" then LoadError("Another addon is not playing nice!
 
 -- Bypassing these checks isn't going to make the addon work. gmDoom is REQUIRED!
 pcall(require, "doom")
-local notfound = "gmDoom not found! gmDoom Maps cannot function!"
-if not DOOM then LoadError(notfound) return end
-if not DOOM.EnumStart then LoadError(notfound) return end
-if not DOOM.EnumAdd then LoadError(notfound) return end
-if not DOOM.SetConstant then LoadError(notfound) return end
+if not DOOM or not DOOM.EnumStart or not DOOM.EnumAdd or not DOOM.SetConstant then LoadError("gmDoom not found! gmDoom Maps cannot function!") return end
 
 -- Even with the introduction of the workshop and its automatic updates, people STILL manage to never update their addons.
 
@@ -75,6 +71,7 @@ local function ClientInclude( sScriptName )
 	end
 end
 
+include("doommap/stream.lua")
 include("doommap/enum.lua")
 include("doommap/maptexture.lua")
 include("doommap/map.lua")

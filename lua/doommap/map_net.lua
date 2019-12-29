@@ -1,6 +1,8 @@
 AddCSLuaFile()
 
+local error = error
 local pairs = pairs
+local print = print
 local setmetatable = setmetatable
 local tostring = tostring
 
@@ -10,6 +12,7 @@ local net = net
 local math = math
 local string = string
 local util = util
+local table = table
 local timer = timer
 local wad = wad
 
@@ -30,22 +33,12 @@ EnumAdd("ML_BLOCKMAP")
 
 if SERVER then
 util.AddNetworkString("DOOM.Map")
+util.AddNetworkString("DOOM.ReqMapChunk")
+util.AddNetworkString("DOOM.MapChunk")
 util.AddNetworkString("DOOM.UnloadMap")
 util.AddNetworkString("DOOM.ChangeFloorTexture")
 util.AddNetworkString("DOOM.ChangeWallTexture")
 end
-
-local targetplayer
-
-local datasize = {
-	[ML_LINEDEFS] = 14,
-	[ML_SIDEDEFS] = 30,
-	[ML_VERTEXES] = 4,
-	[ML_SEGS] = 12,
-	[ML_SSECTORS] = 4,
-	[ML_NODES] = 28,
-	[ML_SECTORS] = 26
-}
 
 local nametotype = {
 	LINEDEFS = ML_LINEDEFS,
@@ -57,29 +50,9 @@ local nametotype = {
 	SECTORS = ML_SECTORS
 }
 
-local function SendLump( fstream, tLumpInfo )
-	local name = tLumpInfo:GetName()
-	local type = nametotype[name]
-	-- shave a few bytes off, just in case
-	local maxsize = math.floor(65530 / datasize[type]) * datasize[type]
-	local numpackets = math.ceil(tLumpInfo.iSize/maxsize)
-	for i = 1, numpackets do
-		local size = i < numpackets and maxsize or tLumpInfo.iSize - maxsize*(i-1)
-		print(string.format("Sending packet %i of %i, lump type %i, data size %i", i, numpackets, type, size))
-		net.Start("DOOM.Map")
-		net.WriteInt(type, 8)
-		net.WriteInt(numpackets, 8)
-		net.WriteInt(i-1, 8)
-		net.WriteData(fstream:Read(size), size)
-		if targetplayer then net.Send(targetplayer) else net.Broadcast() end
-	end
-end
-
-function MAP:SendToClients(tWadFile, ply)
+-- TODO: add lump hashes/checksums so that maps can be loaded locally if available
+function MAP:SetupNet(tWadFile)
 	local tDirectory = tWadFile:GetDirectory()
-	targetplayer = ply
-	local index
-	if ply then index = ply:EntIndex() end
 	tDirectory:ResetReadIndex()
 	tDirectory:FindNextNamed(self.name)
 	tDirectory:GetNext() -- THINGS
@@ -90,31 +63,75 @@ function MAP:SendToClients(tWadFile, ply)
 	local ssectors = tDirectory:GetNext() -- SSECTORS
 	local nodes = tDirectory:GetNext() -- NODES
 	local sectors = tDirectory:GetNext() -- SECTORS
-	tWadFile:ReadLump(linedefs, SendLump)
-	coroutine.yield()
-	tWadFile:ReadLump(sidedefs, SendLump)
-	coroutine.yield()
-	tWadFile:ReadLump(vertexes, SendLump)
-	coroutine.yield()
-	tWadFile:ReadLump(segs, SendLump)
-	coroutine.yield()
-	tWadFile:ReadLump(ssectors, SendLump)
-	coroutine.yield()
-	tWadFile:ReadLump(nodes, SendLump)
-	coroutine.yield()
-	tWadFile:ReadLump(sectors, SendLump)
-	-- WAD should really have a close function
-	tWadFile.fstream:Close()
-	coroutine.yield()
-	if index then timer.Destroy("DOOM.LoadMap"..tostring(index)) end
+	local lumps = {}
+	local function PrepareLumpSend(fstream, tLumpInfo)
+		local name = tLumpInfo:GetName()
+		local type = nametotype[name]
+		local data = fstream:Read(tLumpInfo.iSize)
+		local cdata = util.Compress(data)
+		local csize = #cdata
+		local maxsize = 65530
+		local numchunks = math.ceil(csize / maxsize)
+		local lump = {}
+		for i = 1, numchunks do
+			local start = (i - 1) * maxsize
+			local size = i < numchunks and maxsize or csize - start
+			lump[i] = string.sub(cdata, start + 1, start + size)
+		end
+		lump.numchunks = numchunks
+		lumps[type] = lump
+	end
+	tWadFile:ReadLump(linedefs, PrepareLumpSend)
+	tWadFile:ReadLump(sidedefs, PrepareLumpSend)
+	tWadFile:ReadLump(vertexes, PrepareLumpSend)
+	tWadFile:ReadLump(segs, PrepareLumpSend)
+	tWadFile:ReadLump(ssectors, PrepareLumpSend)
+	tWadFile:ReadLump(nodes, PrepareLumpSend)
+	tWadFile:ReadLump(sectors, PrepareLumpSend)
+	self.lumps = lumps
+	
+	net.Start("DOOM.Map")
+	net.WriteString(self.name)
+	net.WriteInt(lumps[ML_LINEDEFS].numchunks, 8)
+	net.WriteInt(lumps[ML_SIDEDEFS].numchunks, 8)
+	net.WriteInt(lumps[ML_VERTEXES].numchunks, 8)
+	net.WriteInt(lumps[ML_SEGS].numchunks, 8)
+	net.WriteInt(lumps[ML_SSECTORS].numchunks, 8)
+	net.WriteInt(lumps[ML_NODES].numchunks, 8)
+	net.WriteInt(lumps[ML_SECTORS].numchunks, 8)
+	net.Broadcast()
 end
 
 hook.Add("DOOM.PlayerInitialSpawn", "DOOM.LoadMap", function(ply)
 	if not Map then return end
-	local tWadFile = wad.Open(Map.wadname)
-	local co = coroutine.wrap(Map.SendToClients)
-	co(Map, tWadFile, ply)
-	timer.Create("DOOM.LoadMap"..tostring(ply:EntIndex()), 0.5, 0, co)
+	local lumps = Map.lumps
+	net.Start("DOOM.Map")
+	net.WriteString(Map.name)
+	net.WriteInt(#lumps[ML_LINEDEFS], 8)
+	net.WriteInt(#lumps[ML_SIDEDEFS], 8)
+	net.WriteInt(#lumps[ML_VERTEXES], 8)
+	net.WriteInt(#lumps[ML_SEGS], 8)
+	net.WriteInt(#lumps[ML_SSECTORS], 8)
+	net.WriteInt(#lumps[ML_NODES], 8)
+	net.WriteInt(#lumps[ML_SECTORS], 8)
+	net.Send(ply)
+end)
+
+net.Receive("DOOM.ReqMapChunk", function(bits, ply)
+	if not Map then return end
+	local type = net.ReadInt(8)
+	local numchunk = net.ReadInt(8)
+	local lump = Map.lumps[type]
+	if not lump then print(string.format("Player '%s' requested invalid lump type %i", ply:GetName(), type)) return end
+	local data = lump[numchunk]
+	if not data then print(string.format("Player '%s' requested invalid chunk %i from lump %i", ply:GetName(), numchunk, type)) return end
+	local size = #data
+	print(string.format("Sending chunk %i of %i, lump type %i, data size %i to player %s", numchunk, lump.numchunks, type, size, ply:GetName()))
+	net.Start("DOOM.MapChunk")
+	net.WriteInt(type, 8)
+	net.WriteInt(numchunk, 8)
+	net.WriteData(data, size)
+	net.Send(ply)
 end)
 
 local function SendChangeFloor(sectorid, newpic, ply)
@@ -172,111 +189,136 @@ end)
 
 if CLIENT then
 
-local function ReceiveLinedefs(bits)
+local function ReceiveMap(bits)
+	local name = net.ReadString()
+	print(string.format("Receiving info for map '%s'", name))
+	if name == "" then return end
+	
+	Map = setmetatable( {}, MAP )
+	Map.name = name
+	Map.lumps = {
+		[ML_LINEDEFS] = { numchunks = net.ReadInt(8) },
+		[ML_SIDEDEFS] = { numchunks = net.ReadInt(8) },
+		[ML_VERTEXES] = { numchunks = net.ReadInt(8) },
+		[ML_SEGS] = { numchunks = net.ReadInt(8) },
+		[ML_SSECTORS] = { numchunks = net.ReadInt(8) },
+		[ML_NODES] = { numchunks = net.ReadInt(8) },
+		[ML_SECTORS] = { numchunks = net.ReadInt(8) }
+	}
+	
+	net.Start("DOOM.ReqMapChunk")
+	net.WriteInt(ML_LINEDEFS, 8)
+	net.WriteInt(1, 8)
+	net.SendToServer()
+end
+
+net.Receive("DOOM.Map", ReceiveMap)
+
+local function ReceiveLinedefs(s, size)
 	local self = {}
-	local total = bits / 8 / 14
+	local total = size / 14
 	for i = 1, total do
 		self[i] = {}
-		self[i].v1 = net.ReadInt(16)
-		self[i].v2 = net.ReadInt(16)
-		self[i].flags = net.ReadInt(16)
-		self[i].special = net.ReadInt(16)
-		self[i].tag = net.ReadInt(16)
+		self[i].v1 = s:ReadUInt16LE()
+		self[i].v2 = s:ReadUInt16LE()
+		self[i].flags = s:ReadUInt16LE()
+		self[i].special = s:ReadUInt16LE()
+		self[i].tag = s:ReadUInt16LE()
 		self[i].sidenum = {}
-		self[i].sidenum[1] = net.ReadInt(16)
-		self[i].sidenum[2] = net.ReadInt(16)
+		self[i].sidenum[1] = s:ReadUInt16LE()
+		self[i].sidenum[2] = s:ReadUInt16LE()
 	end
 	return self
 end
 
-local function ReceiveSidedefs(bits)
+local function ReceiveSidedefs(s, size)
 	local self = {}
-	local total = bits / 8 / 30
+	local total = size / 30
 	for i = 1, total do
 		self[i] = {}
-		self[i].textureoffset = net.ReadInt(16)
-		self[i].rowoffset = net.ReadInt(16) * HEIGHTCORRECTION
-		self[i].toptexture = string.upper(string.TrimRight(net.ReadData(8), "\0"))
-		self[i].bottomtexture = string.upper(string.TrimRight(net.ReadData(8), "\0"))
-		self[i].midtexture = string.upper(string.TrimRight(net.ReadData(8), "\0"))
-		self[i].sector = net.ReadInt(16)
+		self[i].textureoffset = s:ReadSInt16LE()
+		self[i].rowoffset = s:ReadSInt16LE() * HEIGHTCORRECTION
+		self[i].toptexture = string.upper(string.TrimRight(s:Read(8), "\0"))
+		self[i].bottomtexture = string.upper(string.TrimRight(s:Read(8), "\0"))
+		self[i].midtexture = string.upper(string.TrimRight(s:Read(8), "\0"))
+		self[i].sector = s:ReadSInt16LE()
 	end
 	return self
 end
 
-local function ReceiveVertexes(bits)
+local function ReceiveVertexes(s, size)
 	local self = {}
-	local total = bits / 8 / 4
+	local total = size / 4
 	for i = 1, total do
 		self[i] = {}
-		self[i].x = net.ReadInt(16)
-		self[i].y = net.ReadInt(16)
+		self[i].x = s:ReadSInt16LE()
+		self[i].y = s:ReadSInt16LE()
 	end
 	return self
 end
 
-local function ReceiveSegs(bits)
+local function ReceiveSegs(s, size)
 	local self = {}
-	local total = bits / 8 / 12
+	local total = size / 12
 	for i = 1, total do
 		self[i] = {}
-		self[i].v1 = net.ReadInt(16)
-		self[i].v2 = net.ReadInt(16)
-		self[i].angle = net.ReadInt(16)
-		self[i].linedef = net.ReadInt(16)
-		self[i].side = net.ReadInt(16)
-		self[i].offset = net.ReadInt(16)
+		self[i].v1 = s:ReadUInt16LE()
+		self[i].v2 = s:ReadUInt16LE()
+		self[i].angle = s:ReadSInt16LE()
+		self[i].linedef = s:ReadUInt16LE()
+		self[i].side = s:ReadUInt16LE()
+		self[i].offset = s:ReadSInt16LE()
 	end
 	return self
 end
 
-local function ReceiveSubsectors(bits)
+local function ReceiveSubsectors(s, size)
 	local self = {}
-	local total = bits / 8 / 4
+	local total = size / 4
 	for i = 1, total do
 		self[i] = {}
-		self[i].numsegs = net.ReadInt(16)
-		self[i].firstseg = net.ReadInt(16)
+		self[i].numsegs = s:ReadSInt16LE()
+		self[i].firstseg = s:ReadSInt16LE()
 	end
 	return self
 end
 
-local function ReceiveNodes(bits)
+local function ReceiveNodes(s, size)
 	local self = {}
-	local total = bits / 8 / 28
+	local total = size / 28
 	for i = 1, total do
 		self[i] = {}
-		self[i].x = net.ReadInt(16)
-		self[i].y = net.ReadInt(16)
-		self[i].dx = net.ReadInt(16)
-		self[i].dy = net.ReadInt(16)
+		self[i].x = s:ReadSInt16LE()
+		self[i].y = s:ReadSInt16LE()
+		self[i].dx = s:ReadSInt16LE()
+		self[i].dy = s:ReadSInt16LE()
 		self[i].bbox = {}
 		for j = 1, 2 do
 			self[i].bbox[j] = {}
-			self[i].bbox[j].top = net.ReadInt(16)
-			self[i].bbox[j].bottom = net.ReadInt(16)
-			self[i].bbox[j].left = net.ReadInt(16)
-			self[i].bbox[j].right = net.ReadInt(16)
+			self[i].bbox[j].top = s:ReadSInt16LE()
+			self[i].bbox[j].bottom = s:ReadSInt16LE()
+			self[i].bbox[j].left = s:ReadSInt16LE()
+			self[i].bbox[j].right = s:ReadSInt16LE()
 		end
 		self[i].children = {}
-		self[i].children[1] = net.ReadUInt(16)
-		self[i].children[2] = net.ReadUInt(16)
+		self[i].children[1] = s:ReadUInt16LE()
+		self[i].children[2] = s:ReadUInt16LE()
 	end
 	return self
 end
 
-local function ReceiveSectors(bits)
+local function ReceiveSectors(s, size)
 	local self = {}
-	local total = bits / 8 / 26
+	local total = size / 26
 	for i = 1, total do
 		self[i] = {}
-		self[i].floorheight = net.ReadInt(16) * HEIGHTCORRECTION
-		self[i].ceilingheight = net.ReadInt(16) * HEIGHTCORRECTION
-		self[i].floorpic = string.upper(string.TrimRight(net.ReadData(8), "\0"))
-		self[i].ceilingpic = string.upper(string.TrimRight(net.ReadData(8), "\0"))
-		self[i].lightlevel = net.ReadInt(16)
-		self[i].special = net.ReadInt(16)
-		self[i].tag = net.ReadInt(16)
+		self[i].floorheight = s:ReadSInt16LE() * HEIGHTCORRECTION
+		self[i].ceilingheight = s:ReadSInt16LE() * HEIGHTCORRECTION
+		self[i].floorpic = string.upper(string.TrimRight(s:Read(8), "\0"))
+		self[i].ceilingpic = string.upper(string.TrimRight(s:Read(8), "\0"))
+		self[i].lightlevel = s:ReadSInt16LE()
+		self[i].special = s:ReadUInt16LE()
+		self[i].tag = s:ReadUInt16LE()
 	end
 	return self
 end
@@ -301,37 +343,59 @@ local typetoname = {
 	[ML_SECTORS] = "Sectors"
 }
 
-local function ReceiveMap(bits)
-	if Map and Map.loaded then Map = nil end
-	if not Map then
-		Map = setmetatable( {}, MAP )
-		for k, v in pairs(typetoname) do
-			Map[v] = {packetcount = 0}
+local function ReceiveMapChunk(bits)
+	if not Map then return end
+	local type = net.ReadInt(8)
+	local numchunk = net.ReadInt(8)
+	local size = bits / 8 - 2
+	local data = net.ReadData(size)
+	local lump = Map.lumps[type]
+	if not lump then error(string.format("received unknown lump type %i", type)) end
+	lump[numchunk] = data
+	local name = typetoname[type]
+	print(string.format("Received chunk %i of %i, lump type %i, data size %i", numchunk, lump.numchunks, type, size))
+	local allchunks = true
+	for i = 1, lump.numchunks do
+		if not lump[i] then allchunks = false end
+	end
+	if allchunks then
+		local cdata = table.concat(lump)
+		local data = util.Decompress(cdata)
+		local s = stream.wrap(data)
+		Map[name] = readers[type](s, #data)
+		lump.loaded = true
+	end
+	
+	local receivedchunks = 0
+	local totalchunks = 0
+	local nextlump
+	local nextchunk
+	for k, v in pairs(typetoname) do
+		local lump = Map.lumps[k]
+		totalchunks = totalchunks + lump.numchunks
+		for i = 1, lump.numchunks do
+			if lump[i] then receivedchunks = receivedchunks + 1 end
+			if not nextlump and not lump[i] then
+				nextlump = k
+				nextchunk = i
+			end
 		end
 	end
-	local type = net.ReadInt(8)
-	local numpackets = net.ReadInt(8)
-	local packet = net.ReadInt(8)
-	local numentries = (bits-24) / 8 / datasize[type]
-	local maxentries = math.floor(65530 / datasize[type])
-	local name = typetoname[type]
-	print(string.format("Receiving packet %i of %i, lump type %i, data size %i", packet+1, numpackets, type, (bits-24) / 8))
-	AddMessage(string.format("%s map lump '%s'", (packet+1 == numpackets and "Received" or "Receiving"), name), 4)
-	local data = readers[type](bits-24)
-	local dest = Map[name]
-	for i = 1, numentries do
-		dest[maxentries*packet+i] = data[i]
+	
+	AddMessage(string.format("Receiving map %s: %i/%i", Map.name, receivedchunks, totalchunks), 4)
+	
+	if nextlump then
+		net.Start("DOOM.ReqMapChunk")
+		net.WriteInt(nextlump, 8)
+		net.WriteInt(nextchunk, 8)
+		net.SendToServer()
+	else
+		Map:Setup()
+		AddMessage("Map Spawning...", 4)
 	end
-	dest.packetcount = dest.packetcount + 1
-	if dest.packetcount == numpackets then dest.loaded = true end
-	for k, v in pairs(typetoname) do
-		if not Map[v].loaded then return end
-	end
-	Map:Setup()
-	AddMessage("Map Spawning...", 4)
 end
 
-net.Receive("DOOM.Map", ReceiveMap)
+net.Receive("DOOM.MapChunk", ReceiveMapChunk)
 net.Receive("DOOM.UnloadMap", function() Map = nil end)
 
 local function ChangeFloorTexture(sector, newpic)

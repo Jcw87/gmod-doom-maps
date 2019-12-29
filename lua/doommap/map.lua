@@ -226,8 +226,9 @@ end
 
 function MAP:SetupSidedefs()
 	for i = 1, #self.Sidedefs do
-		self.Sidedefs[i].id = i
-		self.Sidedefs[i].sector = self.Sectors[self.Sidedefs[i].sector+1]
+		local sidedef = self.Sidedefs[i]
+		sidedef.id = i
+		sidedef.sector = self.Sectors[sidedef.sector+1]
 	end
 end
 
@@ -417,11 +418,7 @@ function MAP:Setup()
 	self.loaded = true
 end
 
-local co
-
-function MAP:Spawn(tWadFile)
-	self:SendToClients(tWadFile)
-	timer.Adjust("DOOM.LoadMap", 0.1, 0, co)
+function MAP:Spawn()
 	for i = 1, #self.Sectors do
 		if i % 10 == 0 then coroutine.yield() end
 		local sector = self.Sectors[i]
@@ -539,13 +536,14 @@ function LoadMap(wadname, episode, map)
 	
 	self:Setup()
 	self:SetupBlockmap()
+	self:SetupNet(tWadFile)
 	
 	Map = self
 	
 	if SERVER then
-		co = coroutine.wrap(self.Spawn)
-		co(self, tWadFile)
-		timer.Create("DOOM.LoadMap", 0.5, 0, co)
+		local co = coroutine.wrap(self.Spawn)
+		co(self)
+		timer.Create("DOOM.LoadMap", 0.1, 0, co)
 	end
 	return self
 end
@@ -660,7 +658,7 @@ function G_ExitLevel(secret)
 		end
 	end
 	timer.Simple(1, UnloadMap)
-	timer.Simple(3, function()
+	timer.Simple(1.2, function()
 		LoadMap(wadname, episode, map) 
 		timer.Create("DOOM.SpawnPlayers", 1, 0, function()
 			if not Map or not Map.spawned then return end
