@@ -40,54 +40,37 @@ util.AddNetworkString("DOOM.ChangeFloorTexture")
 util.AddNetworkString("DOOM.ChangeWallTexture")
 end
 
-local nametotype = {
-	LINEDEFS = ML_LINEDEFS,
-	SIDEDEFS = ML_SIDEDEFS,
-	VERTEXES = ML_VERTEXES,
-	SEGS = ML_SEGS,
-	SSECTORS = ML_SSECTORS,
-	NODES = ML_NODES,
-	SECTORS = ML_SECTORS
-}
+local function PrepareLumpSend(fstream, tLumpInfo)
+	local data = fstream:Read(tLumpInfo.iSize)
+	local cdata = util.Compress(data)
+	local csize = #cdata
+	local maxsize = 65530
+	local numchunks = math.ceil(csize / maxsize)
+	local lump = {}
+	for i = 1, numchunks do
+		local start = (i - 1) * maxsize
+		local size = i < numchunks and maxsize or csize - start
+		lump[i] = string.sub(cdata, start + 1, start + size)
+	end
+	lump.numchunks = numchunks
+	return lump
+end
 
 -- TODO: add lump hashes/checksums so that maps can be loaded locally if available
 function MAP:SetupNet(tWadFile)
 	local tDirectory = tWadFile:GetDirectory()
 	tDirectory:ResetReadIndex()
 	tDirectory:FindNextNamed(self.name)
-	tDirectory:GetNext() -- THINGS
-	local linedefs = tDirectory:GetNext() -- LINEDEFS
-	local sidedefs = tDirectory:GetNext() -- SIDEDEFS
-	local vertexes = tDirectory:GetNext() -- VERTEXES
-	local segs = tDirectory:GetNext() -- SEGS
-	local ssectors = tDirectory:GetNext() -- SSECTORS
-	local nodes = tDirectory:GetNext() -- NODES
-	local sectors = tDirectory:GetNext() -- SECTORS
+	
 	local lumps = {}
-	local function PrepareLumpSend(fstream, tLumpInfo)
-		local name = tLumpInfo:GetName()
-		local type = nametotype[name]
-		local data = fstream:Read(tLumpInfo.iSize)
-		local cdata = util.Compress(data)
-		local csize = #cdata
-		local maxsize = 65530
-		local numchunks = math.ceil(csize / maxsize)
-		local lump = {}
-		for i = 1, numchunks do
-			local start = (i - 1) * maxsize
-			local size = i < numchunks and maxsize or csize - start
-			lump[i] = string.sub(cdata, start + 1, start + size)
-		end
-		lump.numchunks = numchunks
-		lumps[type] = lump
-	end
-	tWadFile:ReadLump(linedefs, PrepareLumpSend)
-	tWadFile:ReadLump(sidedefs, PrepareLumpSend)
-	tWadFile:ReadLump(vertexes, PrepareLumpSend)
-	tWadFile:ReadLump(segs, PrepareLumpSend)
-	tWadFile:ReadLump(ssectors, PrepareLumpSend)
-	tWadFile:ReadLump(nodes, PrepareLumpSend)
-	tWadFile:ReadLump(sectors, PrepareLumpSend)
+	tDirectory:GetNext() -- THINGS
+	lumps[ML_LINEDEFS] = tWadFile:ReadLump(tDirectory:GetNext(), PrepareLumpSend)
+	lumps[ML_SIDEDEFS] = tWadFile:ReadLump(tDirectory:GetNext(), PrepareLumpSend)
+	lumps[ML_VERTEXES] = tWadFile:ReadLump(tDirectory:GetNext(), PrepareLumpSend)
+	lumps[ML_SEGS] = tWadFile:ReadLump(tDirectory:GetNext(), PrepareLumpSend)
+	lumps[ML_SSECTORS] = tWadFile:ReadLump(tDirectory:GetNext(), PrepareLumpSend)
+	lumps[ML_NODES] = tWadFile:ReadLump(tDirectory:GetNext(), PrepareLumpSend)
+	lumps[ML_SECTORS] = tWadFile:ReadLump(tDirectory:GetNext(), PrepareLumpSend)
 	self.lumps = lumps
 	
 	net.Start("DOOM.Map")

@@ -537,6 +537,8 @@ function LoadMap(wadname, episode, map)
 	self:Setup()
 	self:SetupBlockmap()
 	self:SetupNet(tWadFile)
+	-- WAD should really have a close function
+	tWadFile.fstream:Close()
 	
 	Map = self
 	
