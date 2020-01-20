@@ -478,20 +478,32 @@ function MAP:PointInSubsector(x, y)
 	return self.Subsectors[bit.bxor(nodeid, NF_SUBSECTOR)+1]
 end
 
+local function MatchNextNamed(tDirectory, pattern)
+	tDirectory:ResetReadIndex()
+	while true do
+		local lump = tDirectory:GetNext()
+		if lump == nil then return end
+		local name = lump:GetName()
+		if name:match(pattern) then return lump end
+	end
+end
+
 function GetDoomGamemode(tWadFile)
 	local tDirectory = tWadFile:GetDirectory()
 	-- Some joker WILL try to load a hexen format wad
 	tDirectory:ResetReadIndex()
 	if tDirectory:FindNextNamed("BEHAVIOR") then return indetermined end
-	tDirectory:ResetReadIndex()
-	if tDirectory:FindNextNamed("MAP01") then return commercial end
-	tDirectory:ResetReadIndex()
-	if tDirectory:FindNextNamed("E4M1") then return retail end
-	tDirectory:ResetReadIndex()
-	if tDirectory:FindNextNamed("E2M1") then return registered end
-	tDirectory:ResetReadIndex()
-	if tDirectory:FindNextNamed("E1M1") then return shareware end
+	if MatchNextNamed(tDirectory, "^MAP%d%d$") then return commercial end
+	if MatchNextNamed(tDirectory, "^E%dM%d$") then return retail end
 	return indetermined
+end
+
+local function GetMapNum(mapname)
+	local episode, map = mapname:match("^E(%d)M(%d)$")
+	if episode then return episode, map end
+	map = mapname:match("^MAP(%d%d)$")
+	if map then return 1, map end
+	return 1, 1
 end
 
 local function GetMapName(gamemode, episode, map)
@@ -502,7 +514,7 @@ local function GetMapName(gamemode, episode, map)
 	end
 end
 
-function LoadMap(wadname, episode, map)
+function LoadMap(wadname, mapname)
 	if Map then return end
 	self = setmetatable( {}, MAP )
 	self.wadname = wadname
@@ -511,11 +523,12 @@ function LoadMap(wadname, episode, map)
 		print(string.format("WAD %s not found!", wadname))
 		return
 	end
+	local episode, map = GetMapNum(mapname)
 	self.gamemode = GetDoomGamemode(tWadFile)
 	if self.gamemode == indetermined then return end
 	self.gameepisode = episode
 	self.gamemap = map
-	self.name = GetMapName(self.gamemode, episode, map)
+	self.name = mapname
 	local tDirectory = tWadFile:GetDirectory()
 	tDirectory:ResetReadIndex()
 	local maploc = tDirectory:FindNextNamed(self.name)
@@ -659,9 +672,10 @@ function G_ExitLevel(secret)
 			map = oldmap + 1
 		end
 	end
+	local mapname = GetMapName(Map.gamemode, episode, map)
 	timer.Simple(1, UnloadMap)
 	timer.Simple(1.2, function()
-		LoadMap(wadname, episode, map) 
+		LoadMap(wadname, mapname) 
 		timer.Create("DOOM.SpawnPlayers", 1, 0, function()
 			if not Map or not Map.spawned then return end
 			for k, v in pairs(players) do
