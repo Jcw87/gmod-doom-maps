@@ -18,19 +18,6 @@ local wad = wad
 
 setfenv( 1, DOOM )
 
-EnumStart()
-EnumAdd("ML_LABEL")
-EnumAdd("ML_THINGS")
-EnumAdd("ML_LINEDEFS")
-EnumAdd("ML_SIDEDEFS")
-EnumAdd("ML_VERTEXES")
-EnumAdd("ML_SEGS")
-EnumAdd("ML_SSECTORS")
-EnumAdd("ML_NODES")
-EnumAdd("ML_SECTORS")
-EnumAdd("ML_REJECT")
-EnumAdd("ML_BLOCKMAP")
-
 if SERVER then
 util.AddNetworkString("DOOM.Map")
 util.AddNetworkString("DOOM.ReqMapChunk")
@@ -40,8 +27,8 @@ util.AddNetworkString("DOOM.ChangeFloorTexture")
 util.AddNetworkString("DOOM.ChangeWallTexture")
 end
 
-local function PrepareLumpSend(fstream, tLumpInfo)
-	local data = fstream:Read(tLumpInfo.iSize)
+local function PrepareLumpSend(s)
+	local data = s:Read(s:Size())
 	local cdata = util.Compress(data)
 	local csize = #cdata
 	local maxsize = 65530
@@ -57,20 +44,17 @@ local function PrepareLumpSend(fstream, tLumpInfo)
 end
 
 -- TODO: add lump hashes/checksums so that maps can be loaded locally if available
-function MAP:SetupNet(tWadFile)
-	local tDirectory = tWadFile:GetDirectory()
-	tDirectory:ResetReadIndex()
-	tDirectory:FindNextNamed(self.name)
+function MAP:SetupNet(wad)
+	local lumpnum = wad:GetLumpNum(self.name)
 	
 	local lumps = {}
-	tDirectory:GetNext() -- THINGS
-	lumps[ML_LINEDEFS] = tWadFile:ReadLump(tDirectory:GetNext(), PrepareLumpSend)
-	lumps[ML_SIDEDEFS] = tWadFile:ReadLump(tDirectory:GetNext(), PrepareLumpSend)
-	lumps[ML_VERTEXES] = tWadFile:ReadLump(tDirectory:GetNext(), PrepareLumpSend)
-	lumps[ML_SEGS] = tWadFile:ReadLump(tDirectory:GetNext(), PrepareLumpSend)
-	lumps[ML_SSECTORS] = tWadFile:ReadLump(tDirectory:GetNext(), PrepareLumpSend)
-	lumps[ML_NODES] = tWadFile:ReadLump(tDirectory:GetNext(), PrepareLumpSend)
-	lumps[ML_SECTORS] = tWadFile:ReadLump(tDirectory:GetNext(), PrepareLumpSend)
+	lumps[ML_LINEDEFS] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_LINEDEFS):Read())
+	lumps[ML_SIDEDEFS] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_SIDEDEFS):Read())
+	lumps[ML_VERTEXES] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_VERTEXES):Read())
+	lumps[ML_SEGS] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_SEGS):Read())
+	lumps[ML_SSECTORS] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_SSECTORS):Read())
+	lumps[ML_NODES] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_NODES):Read())
+	lumps[ML_SECTORS] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_SECTORS):Read())
 	self.lumps = lumps
 	
 	net.Start("DOOM.Map")
@@ -90,13 +74,13 @@ hook.Add("DOOM.PlayerInitialSpawn", "DOOM.LoadMap", function(ply)
 	local lumps = Map.lumps
 	net.Start("DOOM.Map")
 	net.WriteString(Map.name)
-	net.WriteInt(#lumps[ML_LINEDEFS], 8)
-	net.WriteInt(#lumps[ML_SIDEDEFS], 8)
-	net.WriteInt(#lumps[ML_VERTEXES], 8)
-	net.WriteInt(#lumps[ML_SEGS], 8)
-	net.WriteInt(#lumps[ML_SSECTORS], 8)
-	net.WriteInt(#lumps[ML_NODES], 8)
-	net.WriteInt(#lumps[ML_SECTORS], 8)
+	net.WriteInt(lumps[ML_LINEDEFS].numchunks, 8)
+	net.WriteInt(lumps[ML_SIDEDEFS].numchunks, 8)
+	net.WriteInt(lumps[ML_VERTEXES].numchunks, 8)
+	net.WriteInt(lumps[ML_SEGS].numchunks, 8)
+	net.WriteInt(lumps[ML_SSECTORS].numchunks, 8)
+	net.WriteInt(lumps[ML_NODES].numchunks, 8)
+	net.WriteInt(lumps[ML_SECTORS].numchunks, 8)
 	net.Send(ply)
 end)
 
@@ -197,123 +181,14 @@ end
 
 net.Receive("DOOM.Map", ReceiveMap)
 
-local function ReceiveLinedefs(s, size)
-	local self = {}
-	local total = size / 14
-	for i = 1, total do
-		self[i] = {}
-		self[i].v1 = s:ReadUInt16LE()
-		self[i].v2 = s:ReadUInt16LE()
-		self[i].flags = s:ReadUInt16LE()
-		self[i].special = s:ReadUInt16LE()
-		self[i].tag = s:ReadUInt16LE()
-		self[i].sidenum = {}
-		self[i].sidenum[1] = s:ReadUInt16LE()
-		self[i].sidenum[2] = s:ReadUInt16LE()
-	end
-	return self
-end
-
-local function ReceiveSidedefs(s, size)
-	local self = {}
-	local total = size / 30
-	for i = 1, total do
-		self[i] = {}
-		self[i].textureoffset = s:ReadSInt16LE()
-		self[i].rowoffset = s:ReadSInt16LE() * HEIGHTCORRECTION
-		self[i].toptexture = string.upper(string.TrimRight(s:Read(8), "\0"))
-		self[i].bottomtexture = string.upper(string.TrimRight(s:Read(8), "\0"))
-		self[i].midtexture = string.upper(string.TrimRight(s:Read(8), "\0"))
-		self[i].sector = s:ReadSInt16LE()
-	end
-	return self
-end
-
-local function ReceiveVertexes(s, size)
-	local self = {}
-	local total = size / 4
-	for i = 1, total do
-		self[i] = {}
-		self[i].x = s:ReadSInt16LE()
-		self[i].y = s:ReadSInt16LE()
-	end
-	return self
-end
-
-local function ReceiveSegs(s, size)
-	local self = {}
-	local total = size / 12
-	for i = 1, total do
-		self[i] = {}
-		self[i].v1 = s:ReadUInt16LE()
-		self[i].v2 = s:ReadUInt16LE()
-		self[i].angle = s:ReadSInt16LE()
-		self[i].linedef = s:ReadUInt16LE()
-		self[i].side = s:ReadUInt16LE()
-		self[i].offset = s:ReadSInt16LE()
-	end
-	return self
-end
-
-local function ReceiveSubsectors(s, size)
-	local self = {}
-	local total = size / 4
-	for i = 1, total do
-		self[i] = {}
-		self[i].numsegs = s:ReadSInt16LE()
-		self[i].firstseg = s:ReadSInt16LE()
-	end
-	return self
-end
-
-local function ReceiveNodes(s, size)
-	local self = {}
-	local total = size / 28
-	for i = 1, total do
-		self[i] = {}
-		self[i].x = s:ReadSInt16LE()
-		self[i].y = s:ReadSInt16LE()
-		self[i].dx = s:ReadSInt16LE()
-		self[i].dy = s:ReadSInt16LE()
-		self[i].bbox = {}
-		for j = 1, 2 do
-			self[i].bbox[j] = {}
-			self[i].bbox[j].top = s:ReadSInt16LE()
-			self[i].bbox[j].bottom = s:ReadSInt16LE()
-			self[i].bbox[j].left = s:ReadSInt16LE()
-			self[i].bbox[j].right = s:ReadSInt16LE()
-		end
-		self[i].children = {}
-		self[i].children[1] = s:ReadUInt16LE()
-		self[i].children[2] = s:ReadUInt16LE()
-	end
-	return self
-end
-
-local function ReceiveSectors(s, size)
-	local self = {}
-	local total = size / 26
-	for i = 1, total do
-		self[i] = {}
-		self[i].floorheight = s:ReadSInt16LE() * HEIGHTCORRECTION
-		self[i].ceilingheight = s:ReadSInt16LE() * HEIGHTCORRECTION
-		self[i].floorpic = string.upper(string.TrimRight(s:Read(8), "\0"))
-		self[i].ceilingpic = string.upper(string.TrimRight(s:Read(8), "\0"))
-		self[i].lightlevel = s:ReadSInt16LE()
-		self[i].special = s:ReadUInt16LE()
-		self[i].tag = s:ReadUInt16LE()
-	end
-	return self
-end
-
 local readers = {
-	[ML_LINEDEFS] = ReceiveLinedefs,
-	[ML_SIDEDEFS] = ReceiveSidedefs,
-	[ML_VERTEXES] = ReceiveVertexes,
-	[ML_SEGS] = ReceiveSegs,
-	[ML_SSECTORS] = ReceiveSubsectors,
-	[ML_NODES] = ReceiveNodes,
-	[ML_SECTORS] = ReceiveSectors
+	[ML_LINEDEFS] = ReadLinedefs,
+	[ML_SIDEDEFS] = ReadSidedefs,
+	[ML_VERTEXES] = ReadVertexes,
+	[ML_SEGS] = ReadSegs,
+	[ML_SSECTORS] = ReadSubsectors,
+	[ML_NODES] = ReadNodes,
+	[ML_SECTORS] = ReadSectors
 }
 
 local typetoname = {
@@ -345,7 +220,7 @@ local function ReceiveMapChunk(bits)
 		local cdata = table.concat(lump)
 		local data = util.Decompress(cdata)
 		local s = stream.wrap(data)
-		Map[name] = readers[type](s, #data)
+		Map[name] = readers[type](s)
 		lump.loaded = true
 	end
 	

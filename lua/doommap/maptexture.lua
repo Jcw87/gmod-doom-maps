@@ -47,11 +47,11 @@ local iTexFlags = bit.bor(
 	TEXTUREFLAGS_PROCEDURAL
 )
 
-local function ReadPnames( fstream )
+local function ReadPnames(s)
 	local self = {}
-	local nummappatches = fstream:ReadLong()
+	local nummappatches = s:ReadSInt32LE()
 	for i = 1, nummappatches do
-		self[i] = string.upper( string.TrimRight( fstream:Read( 8 ), "\0" ) )
+		self[i] = s:Read(8):TrimRight("\0"):upper()
 	end
 	return self
 end
@@ -59,39 +59,38 @@ end
 MAPTEXTURE = MAPTEXTURE or {}
 MAPTEXTURE.__index = MAPTEXTURE
 
-local function ReadMapTexture( fstream )
+local function ReadMapTexture(s)
 	local self = setmetatable( {}, MAPTEXTURE )
 
-	self.name = string.TrimRight( fstream:Read( 8 ), "\0" )
-	self.masked = tobool( fstream:ReadLong() )
-	self.width = fstream:ReadShort()
-	self.height = fstream:ReadShort()
-	self.columndirectory = fstream:ReadLong() // OBSOLETE
-	self.patchcount = fstream:ReadShort()
+	self.name = s:Read(8):TrimRight("\0")
+	self.masked = tobool(s:ReadSInt32LE())
+	self.width = s:ReadSInt16LE()
+	self.height = s:ReadSInt16LE()
+	self.columndirectory = s:ReadSInt32LE() -- OBSOLETE
+	self.patchcount = s:ReadSInt16LE()
 	self.patches = {}
 	for i = 1, self.patchcount do
 		local patch = {}
-		patch.originx = fstream:ReadShort()
-		patch.originy = fstream:ReadShort()
-		patch.patch = fstream:ReadShort()
-		patch.stepdir = fstream:ReadShort()
-		patch.colormap = fstream:ReadShort()
+		patch.originx = s:ReadSInt16LE()
+		patch.originy = s:ReadSInt16LE()
+		patch.patch = s:ReadSInt16LE()
+		patch.stepdir = s:ReadSInt16LE()
+		patch.colormap = s:ReadSInt16LE()
 		self.patches[i] = patch
 	end
 	return self
 end
 
-local function ReadTextureLump( fstream )
+local function ReadTextureLump(s)
 	local self = {}
-	local start = fstream:Tell()
-	local numtextures = fstream:ReadLong()
+	local numtextures = s:ReadSInt32LE()
 	local offsets = {}
 	for i = 1, numtextures do
-		offsets[i] = fstream:ReadLong()
+		offsets[i] = s:ReadSInt32LE()
 	end
 	for i = 1, numtextures do
-		fstream:Seek( start+offsets[i] )
-		self[i] = ReadMapTexture( fstream )
+		s:Seek(offsets[i])
+		self[i] = ReadMapTexture(s)
 	end
 	return self
 end
@@ -110,23 +109,20 @@ end
 local tTextures = {}
 local tUninitializedTextures = {}
 
-function LoadTextureLumps(tWadFile)
-	if not tWadFile then return end
-	local tDirectory = tWadFile:GetDirectory()
+function LoadTextureLumps(wad)
+	if not wad then return end
 
 	-- PNAMES
-	tDirectory:ResetReadIndex()
-	local tLumpInfo = tDirectory:FindNextNamed( "PNAMES" )
-	if not tLumpInfo then return end
-	local pnames = tWadFile:ReadLump( tLumpInfo, ReadPnames )
+	local lump = wad:GetLumpByName("PNAMES")
+	if not lump then return end
+	local pnames = ReadPnames(lump:Read())
 	
 	-- TEXTURES
 	local textures = {}
-	tDirectory:ResetReadIndex()
-	tLumpInfo = tDirectory:FindNextNamed( "TEXTURE1" )
-	table.Add( textures, tWadFile:ReadLump( tLumpInfo, ReadTextureLump ) )
-	tLumpInfo = tDirectory:FindNextNamed("TEXTURE2")
-	if tLumpInfo then table.Add( textures, tWadFile:ReadLump( tLumpInfo, ReadTextureLump ) ) end
+	lump = wad:GetLumpByName("TEXTURE1")
+	table.Add(textures, ReadTextureLump(lump:Read()))
+	lump = wad:GetLumpByName("TEXTURE2")
+	if lump then table.Add(textures, ReadTextureLump(lump:Read())) end
 
 	-- put them together
 	SetupTextures(pnames, textures)
@@ -154,19 +150,13 @@ function GetMapTexture(name)
 end
 
 function LoadTextures()
-	--[[
-	local tWadFile = wad.Open("DOOM.WAD")
-	if tWadFile then
-		LoadTextureLumps(tWadFile)
-		tWadFile.fstream:Close()
-	end
-	tWadFile = wad.Open("DOOM2.WAD")
-	if tWadFile then
-		LoadTextureLumps(tWadFile)
-		tWadFile.fstream:Close()
-	end
-	]]
-	LoadTextureLumps(GetWad())
+	local tWadFile = GetWad()
+	if not tWadFile then return end
+	local filename = tWadFile:GetName()
+	local wad = OpenWad(filename)
+	if not wad then return end
+	LoadTextureLumps(wad)
+	wad:Close()
 end
 
 if CLIENT then
@@ -429,15 +419,18 @@ local function InitFlatAnim(animdef)
 	local names = {}
 	local tWadFile = GetWad()
 	if not tWadFile then return end
-	local directory = tWadFile:GetDirectory()
-	directory:ResetReadIndex()
-	local tLumpInfo = directory:FindNextNamed(animdef.startname)
-	if not tLumpInfo then return end
-	while tLumpInfo:GetName() ~= animdef.endname do
-		table.insert(names, tLumpInfo:GetName())
-		tLumpInfo = directory:GetNext()
-	end
-	table.insert(names, animdef.endname)
+	local filename = tWadFile:GetName()
+	local wad = OpenWad(filename)
+	if not wad then return end
+	local lumpnum = wad:GetLumpNum(animdef.startname)
+	if not lumpnum then return end
+	repeat
+		local lump = wad:GetLumpByNum(lumpnum)
+		if not lump then return end
+		local name = lump:GetName()
+		table.insert(names, name)
+		lumpnum = lumpnum + 1
+	until name == animdef.endname
 	for i = 1, #names do
 		j = i + 1
 		if j > #names then j = 1 end

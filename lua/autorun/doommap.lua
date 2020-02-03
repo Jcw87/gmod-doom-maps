@@ -72,6 +72,7 @@ local function ClientInclude( sScriptName )
 end
 
 include("doommap/stream.lua")
+include("doommap/wad.lua")
 include("doommap/enum.lua")
 include("doommap/maptexture.lua")
 include("doommap/map.lua")

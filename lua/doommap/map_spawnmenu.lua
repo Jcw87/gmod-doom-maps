@@ -25,18 +25,16 @@ concommand.Add("doom_map_wadmaps", function(ply, cmd, args)
 	if not ply:IsAdmin() then return end
 	local wadname = args[1]
 	if not wadname then return end
-	local tWadFile = wad.Open(wadname)
-	if not tWadFile then ply:ChatPrint(string.format("Wad '%s' could not be read!", wadname)) return end
+	local wad = DOOM.OpenWad(wadname)
+	if not wad then ply:ChatPrint(string.format("Wad '%s' could not be read!", wadname)) return end
 	-- TODO: use zDoom data to determine what maps exist
 	local maps = {}
-	local tDirectory = tWadFile:GetDirectory()
-	while true do
-		local lump = tDirectory:GetNext()
-		if lump == nil then break end
+	for i = 1, wad:GetNumLumps() do
+		local lump = wad:GetLumpByNum(i)
 		local name = lump:GetName()
 		if name:match("^E%dM%d$") or name:match("^MAP%d%d$") then table.insert(maps, name) end
 	end
-	tWadFile.fstream:Close()
+	wad:Close()
 	net.Start("DOOM.WadMaps")
 	for i = 1, #maps do
 		net.WriteString(maps[i])

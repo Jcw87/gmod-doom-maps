@@ -50,156 +50,151 @@ EnumAdd("ST_NEGATIVE")
 
 SetConstant("NF_SUBSECTOR", 0x8000)
 
-local function ReadUShort( fstream )
-	local short = fstream:ReadShort()
-	return short < 0 and bit.band(short, 65535) or short
-end
-
-local function ReadThings( fstream, tLumpInfo )
+function ReadThings(s)
 	local self = {}
-	local total = tLumpInfo.iSize / 10
+	local total = s:Size() / 10
 	for i = 1, total do
 		self[i] = {}
-		self[i].x = fstream:ReadShort()
-		self[i].y = fstream:ReadShort()
-		self[i].angle = fstream:ReadShort()
-		self[i].type = ReadUShort( fstream )
-		self[i].options = ReadUShort( fstream )
+		self[i].x = s:ReadSInt16LE()
+		self[i].y = s:ReadSInt16LE()
+		self[i].angle = s:ReadSInt16LE()
+		self[i].type = s:ReadUInt16LE()
+		self[i].options = s:ReadUInt16LE()
 	end
 	return self
 end
 
-local function ReadLinedefs( fstream, tLumpInfo )
+function ReadLinedefs(s)
 	local self = {}
-	local total = tLumpInfo.iSize / 14
+	local total = s:Size() / 14
 	for i = 1, total do
 		self[i] = {}
-		self[i].v1 = ReadUShort( fstream )
-		self[i].v2 = ReadUShort( fstream )
-		self[i].flags = ReadUShort( fstream )
-		self[i].special = ReadUShort( fstream )
-		self[i].tag = ReadUShort( fstream )
+		self[i].v1 = s:ReadUInt16LE()
+		self[i].v2 = s:ReadUInt16LE()
+		self[i].flags = s:ReadUInt16LE()
+		self[i].special = s:ReadUInt16LE()
+		self[i].tag = s:ReadUInt16LE()
 		self[i].sidenum = {}
-		self[i].sidenum[1] = ReadUShort( fstream )
-		self[i].sidenum[2] = ReadUShort( fstream )
+		self[i].sidenum[1] = s:ReadUInt16LE()
+		self[i].sidenum[2] = s:ReadUInt16LE()
 	end
 	return self
 end
 
-local function ReadSidedefs( fstream, tLumpInfo )
+function ReadSidedefs(s)
 	local self = {}
-	local total = tLumpInfo.iSize / 30
+	local total = s:Size() / 30
 	for i = 1, total do
 		self[i] = {}
-		self[i].textureoffset = fstream:ReadShort()
-		self[i].rowoffset = fstream:ReadShort() * HEIGHTCORRECTION
-		self[i].toptexture = string.upper(string.TrimRight(fstream:Read( 8 ), "\0"))
-		self[i].bottomtexture = string.upper(string.TrimRight(fstream:Read( 8 ), "\0"))
-		self[i].midtexture = string.upper(string.TrimRight(fstream:Read( 8 ), "\0"))
-		self[i].sector = fstream:ReadShort()
+		self[i].textureoffset = s:ReadSInt16LE()
+		self[i].rowoffset = s:ReadSInt16LE() * HEIGHTCORRECTION
+		self[i].toptexture = s:Read(8):TrimRight("\0"):upper()
+		self[i].bottomtexture = s:Read(8):TrimRight("\0"):upper()
+		self[i].midtexture = s:Read(8):TrimRight("\0"):upper()
+		self[i].sector = s:ReadSInt16LE()
 	end
 	return self
 end
 
-local function ReadVertexes( fstream, tLumpInfo )
+function ReadVertexes(s)
 	local self = {}
-	local total = tLumpInfo.iSize / 4
+	local total = s:Size() / 4
 	for i = 1, total do
 		self[i] = {}
-		self[i].x = fstream:ReadShort()
-		self[i].y = fstream:ReadShort()
+		self[i].x = s:ReadSInt16LE()
+		self[i].y = s:ReadSInt16LE()
 	end
 	return self
 end
 
-local function ReadSegs( fstream, tLumpInfo )
+function ReadSegs(s)
 	local self = {}
-	local total = tLumpInfo.iSize / 12
+	local total = s:Size() / 12
 	for i = 1, total do
 		self[i] = {}
-		self[i].v1 = ReadUShort( fstream )
-		self[i].v2 = ReadUShort( fstream )
-		self[i].angle = fstream:ReadShort()
-		self[i].linedef = ReadUShort( fstream )
-		self[i].side = ReadUShort( fstream )
-		self[i].offset = fstream:ReadShort()
+		self[i].v1 = s:ReadUInt16LE()
+		self[i].v2 = s:ReadUInt16LE()
+		self[i].angle = s:ReadSInt16LE()
+		self[i].linedef = s:ReadUInt16LE()
+		self[i].side = s:ReadUInt16LE()
+		self[i].offset = s:ReadSInt16LE()
 	end
 	return self
 end
 
-local function ReadSubsectors( fstream, tLumpInfo )
+function ReadSubsectors(s)
 	local self = {}
-	local total = tLumpInfo.iSize / 4
+	local total = s:Size() / 4
 	for i = 1, total do
 		self[i] = {}
-		self[i].numsegs = fstream:ReadShort()
-		self[i].firstseg = fstream:ReadShort()
+		self[i].numsegs = s:ReadSInt16LE()
+		self[i].firstseg = s:ReadSInt16LE()
 	end
 	return self
 end
 
-local function ReadNodes( fstream, tLumpInfo )
+function ReadNodes(s)
 	local self = {}
-	local total = tLumpInfo.iSize / 28
+	local total = s:Size() / 28
 	for i = 1, total do
 		self[i] = {}
-		self[i].x = fstream:ReadShort()
-		self[i].y = fstream:ReadShort()
-		self[i].dx = fstream:ReadShort()
-		self[i].dy = fstream:ReadShort()
+		self[i].x = s:ReadSInt16LE()
+		self[i].y = s:ReadSInt16LE()
+		self[i].dx = s:ReadSInt16LE()
+		self[i].dy = s:ReadSInt16LE()
 		self[i].bbox = {}
 		for j = 1, 2 do
 			self[i].bbox[j] = {}
-			self[i].bbox[j].top = fstream:ReadShort()
-			self[i].bbox[j].bottom = fstream:ReadShort()
-			self[i].bbox[j].left = fstream:ReadShort()
-			self[i].bbox[j].right = fstream:ReadShort()
+			self[i].bbox[j].top = s:ReadSInt16LE()
+			self[i].bbox[j].bottom = s:ReadSInt16LE()
+			self[i].bbox[j].left = s:ReadSInt16LE()
+			self[i].bbox[j].right = s:ReadSInt16LE()
 		end
 		self[i].children = {}
-		self[i].children[1] = ReadUShort( fstream )
-		self[i].children[2] = ReadUShort( fstream )
+		self[i].children[1] = s:ReadUInt16LE()
+		self[i].children[2] = s:ReadUInt16LE()
 	end
 	return self
 end
 
-local function ReadSectors( fstream, tLumpInfo )
+function ReadSectors(s)
 	local self = {}
-	local total = tLumpInfo.iSize / 26
+	local total = s:Size() / 26
 	for i = 1, total do
 		self[i] = {}
-		self[i].floorheight = fstream:ReadShort() * HEIGHTCORRECTION
-		self[i].ceilingheight = fstream:ReadShort() * HEIGHTCORRECTION
-		self[i].floorpic = string.upper(string.TrimRight(fstream:Read( 8 ), "\0"))
-		self[i].ceilingpic = string.upper(string.TrimRight(fstream:Read( 8 ), "\0"))
-		self[i].lightlevel = fstream:ReadShort()
-		self[i].special = ReadUShort( fstream )
-		self[i].tag = ReadUShort( fstream )
+		self[i].floorheight = s:ReadSInt16LE() * HEIGHTCORRECTION
+		self[i].ceilingheight = s:ReadSInt16LE() * HEIGHTCORRECTION
+		self[i].floorpic = s:Read(8):TrimRight("\0"):upper()
+		self[i].ceilingpic = s:Read(8):TrimRight("\0"):upper()
+		self[i].lightlevel = s:ReadSInt16LE()
+		self[i].special = s:ReadUInt16LE()
+		self[i].tag = s:ReadUInt16LE()
 	end
 	return self
 end
 
-local function ReadBlockmap( fstream, tLumpInfo )
+function ReadBlockmap(s)
 	local self = {}
-	local start = fstream:Tell()
-	self.bmaporgx = fstream:ReadShort()
-	self.bmaporgy = fstream:ReadShort()
-	self.bmapwidth = fstream:ReadShort()
-	self.bmapheight = fstream:ReadShort()
+	local size = s:Size()
+	self.bmaporgx = s:ReadSInt16LE()
+	self.bmaporgy = s:ReadSInt16LE()
+	self.bmapwidth = s:ReadSInt16LE()
+	self.bmapheight = s:ReadSInt16LE()
 	local offsets = {}
 	for i = 1, ((self.bmapwidth)*(self.bmapheight)) do
-		offsets[i] = ReadUShort(fstream)
+		offsets[i] = s:ReadUInt16LE()
 	end
 	for i = 1, #offsets do
 		local lines = {}
-		fstream:Seek(start + offsets[i]*2)
-		local start0 = fstream:ReadShort() -- discard starting 0
+		s:Seek(offsets[i]*2)
+		local start0 = s:ReadSInt16LE() -- discard starting 0
 		if start0 != 0 then error("Blockmap invalid!") end
-		local lineid = fstream:ReadShort()
+		local lineid = s:ReadSInt16LE()
 		local currentoffset = offsets[i]*2 + 2
 		while lineid ~= -1 do
-			if currentoffset > tLumpInfo.iSize then error("Blockmap invalid!") end
+			if currentoffset > size then error("Blockmap invalid!") end
 			table.insert(lines, lineid)
-			lineid = fstream:ReadShort()
+			lineid = s:ReadSInt16LE()
 			currentoffset = currentoffset + 2
 		end
 		self[i] = lines
@@ -478,23 +473,19 @@ function MAP:PointInSubsector(x, y)
 	return self.Subsectors[bit.bxor(nodeid, NF_SUBSECTOR)+1]
 end
 
-local function MatchNextNamed(tDirectory, pattern)
-	tDirectory:ResetReadIndex()
-	while true do
-		local lump = tDirectory:GetNext()
-		if lump == nil then return end
+local function MatchNextNamed(wad, pattern)
+	for i = 1, wad:GetNumLumps() do
+		local lump = wad:GetLumpByNum(i)
 		local name = lump:GetName()
 		if name:match(pattern) then return lump end
 	end
 end
 
-function GetDoomGamemode(tWadFile)
-	local tDirectory = tWadFile:GetDirectory()
+function GetDoomGamemode(wad)
 	-- Some joker WILL try to load a hexen format wad
-	tDirectory:ResetReadIndex()
-	if tDirectory:FindNextNamed("BEHAVIOR") then return indetermined end
-	if MatchNextNamed(tDirectory, "^MAP%d%d$") then return commercial end
-	if MatchNextNamed(tDirectory, "^E%dM%d$") then return retail end
+	if wad:GetLumpNum("BEHAVIOR") then return indetermined end
+	if MatchNextNamed(wad, "^MAP%d%d$") then return commercial end
+	if MatchNextNamed(wad, "^E%dM%d$") then return retail end
 	return indetermined
 end
 
@@ -518,40 +509,36 @@ function LoadMap(wadname, mapname)
 	if Map then return end
 	self = setmetatable( {}, MAP )
 	self.wadname = wadname
-	local tWadFile = wad.Open(wadname)
-	if not tWadFile then
+	local wad = OpenWad(wadname)
+	if not wad then
 		print(string.format("WAD %s not found!", wadname))
 		return
 	end
 	local episode, map = GetMapNum(mapname)
-	self.gamemode = GetDoomGamemode(tWadFile)
+	self.gamemode = GetDoomGamemode(wad)
 	if self.gamemode == indetermined then return end
 	self.gameepisode = episode
 	self.gamemap = map
 	self.name = mapname
-	local tDirectory = tWadFile:GetDirectory()
-	tDirectory:ResetReadIndex()
-	local maploc = tDirectory:FindNextNamed(self.name)
-	if not maploc then
+	local lumpnum = wad:GetLumpNum(self.name)
+	if not lumpnum then
 		print(string.format("MAP %s not found in WAD %s!", self.name, wadname))
 		return
 	end
-	self.Things = tWadFile:ReadLump(tDirectory:GetNext(), ReadThings)
-	self.Linedefs = tWadFile:ReadLump(tDirectory:GetNext(), ReadLinedefs)
-	self.Sidedefs = tWadFile:ReadLump(tDirectory:GetNext(), ReadSidedefs)
-	self.Vertexes = tWadFile:ReadLump(tDirectory:GetNext(), ReadVertexes)
-	self.Segs = tWadFile:ReadLump(tDirectory:GetNext(), ReadSegs)
-	self.Subsectors = tWadFile:ReadLump(tDirectory:GetNext(), ReadSubsectors)
-	self.Nodes = tWadFile:ReadLump(tDirectory:GetNext(), ReadNodes)
-	self.Sectors = tWadFile:ReadLump(tDirectory:GetNext(), ReadSectors)
-	tDirectory:GetNext() -- REJECT
-	self.Blockmap = tWadFile:ReadLump(tDirectory:GetNext(), ReadBlockmap)
+	self.Things = ReadThings(wad:GetLumpByNum(lumpnum + ML_THINGS):Read())
+	self.Linedefs = ReadLinedefs(wad:GetLumpByNum(lumpnum + ML_LINEDEFS):Read())
+	self.Sidedefs = ReadSidedefs(wad:GetLumpByNum(lumpnum + ML_SIDEDEFS):Read())
+	self.Vertexes = ReadVertexes(wad:GetLumpByNum(lumpnum + ML_VERTEXES):Read())
+	self.Segs = ReadSegs(wad:GetLumpByNum(lumpnum + ML_SEGS):Read())
+	self.Subsectors = ReadSubsectors(wad:GetLumpByNum(lumpnum + ML_SSECTORS):Read())
+	self.Nodes = ReadNodes(wad:GetLumpByNum(lumpnum + ML_NODES):Read())
+	self.Sectors = ReadSectors(wad:GetLumpByNum(lumpnum + ML_SECTORS):Read())
+	self.Blockmap = ReadBlockmap(wad:GetLumpByNum(lumpnum + ML_BLOCKMAP):Read())
 	
 	self:Setup()
 	self:SetupBlockmap()
-	self:SetupNet(tWadFile)
-	-- WAD should really have a close function
-	tWadFile.fstream:Close()
+	self:SetupNet(wad)
+	wad:Close()
 	
 	Map = self
 	
