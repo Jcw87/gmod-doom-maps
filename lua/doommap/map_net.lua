@@ -8,8 +8,8 @@ local tostring = tostring
 
 local coroutine = coroutine
 local hook = hook
-local net = net
 local math = math
+local net = net
 local string = string
 local util = util
 local table = table
@@ -39,11 +39,34 @@ local function PrepareLumpSend(s)
 		local size = i < numchunks and maxsize or csize - start
 		lump[i] = string.sub(cdata, start + 1, start + size)
 	end
+	lump.hash = md5.sum(data)
 	lump.numchunks = numchunks
 	return lump
 end
 
--- TODO: add lump hashes/checksums so that maps can be loaded locally if available
+local lumpsendtypes = {
+	ML_LINEDEFS,
+	ML_SIDEDEFS,
+	ML_VERTEXES,
+	ML_SEGS,
+	ML_SSECTORS,
+	ML_NODES,
+	ML_SECTORS,
+}
+
+local function SendMapInfo(map, ply)
+	local lumps = map.lumps
+	net.Start("DOOM.Map")
+	net.WriteString(map.wadname)
+	net.WriteString(map.name)
+	for i = 1, #lumpsendtypes do
+		local type = lumpsendtypes[i]
+		net.WriteInt(lumps[type].numchunks, 8)
+		net.WriteData(lumps[type].hash, 16)
+	end
+	if ply then net.Send(ply) else net.Broadcast() end
+end
+
 function MAP:SetupNet(wad)
 	local lumpnum = wad:GetLumpNum(self.name)
 	
@@ -57,31 +80,12 @@ function MAP:SetupNet(wad)
 	lumps[ML_SECTORS] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_SECTORS):Read())
 	self.lumps = lumps
 	
-	net.Start("DOOM.Map")
-	net.WriteString(self.name)
-	net.WriteInt(lumps[ML_LINEDEFS].numchunks, 8)
-	net.WriteInt(lumps[ML_SIDEDEFS].numchunks, 8)
-	net.WriteInt(lumps[ML_VERTEXES].numchunks, 8)
-	net.WriteInt(lumps[ML_SEGS].numchunks, 8)
-	net.WriteInt(lumps[ML_SSECTORS].numchunks, 8)
-	net.WriteInt(lumps[ML_NODES].numchunks, 8)
-	net.WriteInt(lumps[ML_SECTORS].numchunks, 8)
-	net.Broadcast()
+	SendMapInfo(self)
 end
 
 hook.Add("DOOM.PlayerInitialSpawn", "DOOM.LoadMap", function(ply)
 	if not Map then return end
-	local lumps = Map.lumps
-	net.Start("DOOM.Map")
-	net.WriteString(Map.name)
-	net.WriteInt(lumps[ML_LINEDEFS].numchunks, 8)
-	net.WriteInt(lumps[ML_SIDEDEFS].numchunks, 8)
-	net.WriteInt(lumps[ML_VERTEXES].numchunks, 8)
-	net.WriteInt(lumps[ML_SEGS].numchunks, 8)
-	net.WriteInt(lumps[ML_SSECTORS].numchunks, 8)
-	net.WriteInt(lumps[ML_NODES].numchunks, 8)
-	net.WriteInt(lumps[ML_SECTORS].numchunks, 8)
-	net.Send(ply)
+	SendMapInfo(Map, ply)
 end)
 
 net.Receive("DOOM.ReqMapChunk", function(bits, ply)
@@ -147,39 +151,14 @@ hook.Add("DOOM.PlayerInitialSpawn", "DOOM.ChangeWallTexture", function(ply)
 	for i = 1, #Map.Sidedefs do
 		local sidedef = Map.Sidedefs[i]
 		if sidedef.picchanged then
-			SendChangeWall(sidedef.id, top, sidedef.toptexture)
-			SendChangeWall(sidedef.id, middle, sidedef.midtexture)
-			SendChangeWall(sidedef.id, bottom, sidedef.bottomtexture)
+			SendChangeWall(sidedef.id, top, sidedef.toptexture, ply)
+			SendChangeWall(sidedef.id, middle, sidedef.midtexture, ply)
+			SendChangeWall(sidedef.id, bottom, sidedef.bottomtexture, ply)
 		end
 	end
 end)
 
 if CLIENT then
-
-local function ReceiveMap(bits)
-	local name = net.ReadString()
-	print(string.format("Receiving info for map '%s'", name))
-	if name == "" then return end
-	
-	Map = setmetatable( {}, MAP )
-	Map.name = name
-	Map.lumps = {
-		[ML_LINEDEFS] = { numchunks = net.ReadInt(8) },
-		[ML_SIDEDEFS] = { numchunks = net.ReadInt(8) },
-		[ML_VERTEXES] = { numchunks = net.ReadInt(8) },
-		[ML_SEGS] = { numchunks = net.ReadInt(8) },
-		[ML_SSECTORS] = { numchunks = net.ReadInt(8) },
-		[ML_NODES] = { numchunks = net.ReadInt(8) },
-		[ML_SECTORS] = { numchunks = net.ReadInt(8) }
-	}
-	
-	net.Start("DOOM.ReqMapChunk")
-	net.WriteInt(ML_LINEDEFS, 8)
-	net.WriteInt(1, 8)
-	net.SendToServer()
-end
-
-net.Receive("DOOM.Map", ReceiveMap)
 
 local readers = {
 	[ML_LINEDEFS] = ReadLinedefs,
@@ -201,45 +180,26 @@ local typetoname = {
 	[ML_SECTORS] = "Sectors"
 }
 
-local function ReceiveMapChunk(bits)
-	if not Map then return end
-	local type = net.ReadInt(8)
-	local numchunk = net.ReadInt(8)
-	local size = bits / 8 - 2
-	local data = net.ReadData(size)
-	local lump = Map.lumps[type]
-	if not lump then error(string.format("received unknown lump type %i", type)) end
-	lump[numchunk] = data
-	local name = typetoname[type]
-	print(string.format("Received chunk %i of %i, lump type %i, data size %i", numchunk, lump.numchunks, type, size))
-	local allchunks = true
-	for i = 1, lump.numchunks do
-		if not lump[i] then allchunks = false end
-	end
-	if allchunks then
-		local cdata = table.concat(lump)
-		local data = util.Decompress(cdata)
-		local s = stream.wrap(data)
-		Map[name] = readers[type](s)
-		lump.loaded = true
-	end
-	
-	local receivedchunks = 0
-	local totalchunks = 0
+local function NextMissingChunk()
+	local lumps = Map.lumps
+
 	local nextlump
 	local nextchunk
-	for k, v in pairs(typetoname) do
-		local lump = Map.lumps[k]
+	local receivedchunks = 0
+	local totalchunks = 0
+	for i = 1, #lumpsendtypes do
+		local type = lumpsendtypes[i]
+		local lump = lumps[type]
 		totalchunks = totalchunks + lump.numchunks
-		for i = 1, lump.numchunks do
-			if lump[i] then receivedchunks = receivedchunks + 1 end
-			if not nextlump and not lump[i] then
-				nextlump = k
-				nextchunk = i
+		for j = 1, lump.numchunks do
+			if lump[j] then receivedchunks = receivedchunks + 1 end
+			if not nextchunk and not lump[j] then
+				nextlump = type
+				nextchunk = j
 			end
 		end
 	end
-	
+
 	AddMessage(string.format("Receiving map %s: %i/%i", Map.name, receivedchunks, totalchunks), 4)
 	
 	if nextlump then
@@ -251,6 +211,76 @@ local function ReceiveMapChunk(bits)
 		Map:Setup()
 		AddMessage("Map Spawning...", 4)
 	end
+end
+
+local function ReceiveMap(bits)
+	local wadname = net.ReadString()
+	local name = net.ReadString()
+	print(string.format("Receiving info for %s/%s", wadname, name))
+	if name == "" then return end
+	
+	Map = setmetatable( {}, MAP )
+	Map.wadname = wadname
+	Map.name = name
+	
+	local lumps = {}
+	for i = 1, #lumpsendtypes do
+		local type = lumpsendtypes[i]
+		lumps[type] = {
+			numchunks = net.ReadInt(8),
+			hash = net.ReadData(16),
+		}
+	end
+	Map.lumps = lumps
+	
+	local wad = OpenWad(wadname)
+	if wad then
+		local lumpnum = wad:GetLumpNum(name)
+		if lumpnum then
+			for i = 1, #lumpsendtypes do
+				local type = lumpsendtypes[i]
+				local lump = lumps[type]
+				local s = wad:GetLumpByNum(lumpnum + type):Read()
+				local hash = md5.sum(s:Read(s:Size()))
+				if hash == lump.hash then
+					s:Seek(0)
+					Map[typetoname[type]] = readers[type](s)
+					for j = 1, lump.numchunks do lump[j] = true end
+				end
+			end
+		end
+	end
+	wad:Close()
+	
+	NextMissingChunk()
+end
+
+net.Receive("DOOM.Map", ReceiveMap)
+
+local function ReceiveMapChunk(bits)
+	if not Map then return end
+	local type = net.ReadInt(8)
+	local numchunk = net.ReadInt(8)
+	local size = bits / 8 - 2
+	local data = net.ReadData(size)
+	local lumps = Map.lumps
+	local lump = lumps[type]
+	if not lump then error(string.format("received unknown lump type %i", type)) end
+	lump[numchunk] = data
+	print(string.format("Received chunk %i of %i, lump type %i, data size %i", numchunk, lump.numchunks, type, size))
+	local allchunks = true
+	for i = 1, lump.numchunks do
+		if not lump[i] then allchunks = false end
+	end
+	if allchunks then
+		local cdata = table.concat(lump)
+		local data = util.Decompress(cdata)
+		local s = stream.wrap(data)
+		Map[typetoname[type]] = readers[type](s)
+		lump.loaded = true
+	end
+	
+	NextMissingChunk()
 end
 
 net.Receive("DOOM.MapChunk", ReceiveMapChunk)

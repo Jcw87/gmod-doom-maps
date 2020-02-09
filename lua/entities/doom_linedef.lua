@@ -32,6 +32,8 @@ function ENT:Setup()
 		self:MakePhysicsObjectAShadow()
 		-- It's less game breaking to have this non-solid for now
 		self:SetNotSolid(true)
+		-- This allows bullets to pass through and not players, however it does not react well with projectile weapons.
+		--self:SetSolidFlags(FSOLID_CUSTOMBOXTEST)
 	else
 		self:SetNotSolid(true)
 	end
