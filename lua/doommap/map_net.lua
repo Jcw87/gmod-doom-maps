@@ -27,8 +27,7 @@ util.AddNetworkString("DOOM.ChangeFloorTexture")
 util.AddNetworkString("DOOM.ChangeWallTexture")
 end
 
-local function PrepareLumpSend(s)
-	local data = s:Read(s:Size())
+local function PrepareLumpSend(data)
 	local cdata = util.Compress(data)
 	local csize = #cdata
 	local maxsize = 65530
@@ -71,13 +70,13 @@ function MAP:SetupNet(wad)
 	local lumpnum = wad:GetLumpNum(self.name)
 	
 	local lumps = {}
-	lumps[ML_LINEDEFS] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_LINEDEFS):Read())
-	lumps[ML_SIDEDEFS] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_SIDEDEFS):Read())
-	lumps[ML_VERTEXES] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_VERTEXES):Read())
-	lumps[ML_SEGS] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_SEGS):Read())
-	lumps[ML_SSECTORS] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_SSECTORS):Read())
-	lumps[ML_NODES] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_NODES):Read())
-	lumps[ML_SECTORS] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_SECTORS):Read())
+	lumps[ML_LINEDEFS] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_LINEDEFS):ReadString())
+	lumps[ML_SIDEDEFS] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_SIDEDEFS):ReadString())
+	lumps[ML_VERTEXES] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_VERTEXES):ReadString())
+	lumps[ML_SEGS] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_SEGS):ReadString())
+	lumps[ML_SSECTORS] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_SSECTORS):ReadString())
+	lumps[ML_NODES] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_NODES):ReadString())
+	lumps[ML_SECTORS] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_SECTORS):ReadString())
 	self.lumps = lumps
 	
 	SendMapInfo(self)
@@ -240,11 +239,10 @@ local function ReceiveMap(bits)
 			for i = 1, #lumpsendtypes do
 				local type = lumpsendtypes[i]
 				local lump = lumps[type]
-				local s = wad:GetLumpByNum(lumpnum + type):Read()
-				local hash = md5.sum(s:Read(s:Size()))
+				local data = wad:GetLumpByNum(lumpnum + type):ReadString()
+				local hash = md5.sum(data)
 				if hash == lump.hash then
-					s:Seek(0)
-					Map[typetoname[type]] = readers[type](s)
+					Map[typetoname[type]] = readers[type](stream.wrap(data))
 					for j = 1, lump.numchunks do lump[j] = true end
 				end
 			end

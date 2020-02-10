@@ -115,14 +115,14 @@ function LoadTextureLumps(wad)
 	-- PNAMES
 	local lump = wad:GetLumpByName("PNAMES")
 	if not lump then return end
-	local pnames = ReadPnames(lump:Read())
+	local pnames = ReadPnames(lump:ReadStream())
 	
 	-- TEXTURES
 	local textures = {}
 	lump = wad:GetLumpByName("TEXTURE1")
-	table.Add(textures, ReadTextureLump(lump:Read()))
+	table.Add(textures, ReadTextureLump(lump:ReadStream()))
 	lump = wad:GetLumpByName("TEXTURE2")
-	if lump then table.Add(textures, ReadTextureLump(lump:Read())) end
+	if lump then table.Add(textures, ReadTextureLump(lump:ReadStream())) end
 
 	-- put them together
 	SetupTextures(pnames, textures)

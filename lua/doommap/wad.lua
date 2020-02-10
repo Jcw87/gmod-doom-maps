@@ -19,15 +19,18 @@ LUMPDESCRIPTOR.__index = LUMPDESCRIPTOR
 
 function LUMPDESCRIPTOR:GetName() return self.name end
 function LUMPDESCRIPTOR:GetSize() return self.size end
-function LUMPDESCRIPTOR:Read()
+function LUMPDESCRIPTOR:GetWad() return self.wad end
+function LUMPDESCRIPTOR:ReadString()
 	local s = self.wad.s
 	s:Seek(self.offset)
-	return stream.wrap(s:Read(self.size))
+	return s:Read(self.size)
 end
+function LUMPDESCRIPTOR:ReadStream() return stream.wrap(self:ReadString()) end
 
 WAD = {}
 WAD.__index = WAD
 
+function WAD:GetName() return self.filename end
 function WAD:GetSize() return self.s:Size() end
 function WAD:GetNumLumps() return #self.directory end
 function WAD:GetLumpNum(name) return self.lookup[name] end
