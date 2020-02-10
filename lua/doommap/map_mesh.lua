@@ -280,7 +280,7 @@ function MAP:ProcessNode(node, polygon)
 			-- if we clip with segs, the floors will stay within their sectors, but we get more holes
 			local subsector = self.Subsectors[bit.bxor(nextnode, NF_SUBSECTOR)+1]
 			local polygon = clipped[i]
-			for i = 1, #subsector.segs do
+			for i = 1, subsector.numsegs do
 				local seg = subsector.segs[i]
 				local v1 = seg.v1
 				local v2 = seg.v2
@@ -303,19 +303,19 @@ function MAP:CreateMeshes()
 	self.FloorPhys = {}
 	self.CeilPhys = {}
 	self.LinePhys = {}
-	for i = 1, #self.Sectors do
+	for i = 1, self.Sectors.n do
 		self.FloorMeshes[i] = {}
 		self.CeilMeshes[i] = {}
 		self.SpecialMeshes[i] = {}
 		self.FloorPhys[i] = {}
 		self.CeilPhys[i] = {}
 	end
-	for i = 1, #self.Sidedefs do
+	for i = 1, self.Sidedefs.n do
 		self.SideMeshes[i] = {}
 	end
 	
 	-- Generate wall data for linedefs
-	for i = 1, #self.Linedefs do
+	for i = 1, self.Linedefs.n do
 		local linedef = self.Linedefs[i]
 		local leftside = linedef.side[1]
 		local rightside = linedef.side[2]
@@ -344,10 +344,10 @@ function MAP:CreateMeshes()
 	polygon[4] = {x = self.Bounds.lower.x, y = self.Bounds.lower.y}
 	
 	-- Traverse node tree and generate polygons for subsectors
-	self:ProcessNode(self.Nodes[#self.Nodes], polygon)
+	self:ProcessNode(self.Nodes[self.Nodes.n], polygon)
 	
 	if CLIENT then
-		for i =1, #self.Linedefs do
+		for i =1, self.Linedefs.n do
 			local linedef = self.Linedefs[i]
 			local leftwalls = linedef.leftwalls
 			local rightwalls = linedef.rightwalls
@@ -430,7 +430,7 @@ function MAP:CreateMeshes()
 	-- Create meshes and convexes for floor and ceiling from polygon
 	local fnormal = Vector(0, 0, 1)
 	local cnormal = Vector(0, 0, -1)
-	for i = 1, #self.Subsectors do
+	for i = 1, self.Subsectors.n do
 		local subsector = self.Subsectors[i]
 		local poly = subsector.polygon
 		local sector = subsector.sector

@@ -8,7 +8,7 @@ setfenv( 1, DOOM )
 
 function EV_Teleport(line, side, thing)
 	if side == 2 then return false end
-	for i = 1, #Map.Things do
+	for i = 1, Map.Things.n do
 		local mobj = Map.Things[i]
 		if mobj.type ~= MT_TELEPORTMAN then continue end
 		if not mobj:IsValid() then continue end

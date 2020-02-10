@@ -32,7 +32,7 @@ WAD.__index = WAD
 
 function WAD:GetName() return self.filename end
 function WAD:GetSize() return self.s:Size() end
-function WAD:GetNumLumps() return #self.directory end
+function WAD:GetNumLumps() return self.directory.n end
 function WAD:GetLumpNum(name) return self.lookup[name] end
 function WAD:GetLumpByNum(num) return self.directory[num] end
 function WAD:GetLumpByName(name)
@@ -68,9 +68,10 @@ function OpenWad(filename)
 		lump.name = s:Read(8):TrimRight("\0"):upper()
 		lump.wad = wad
 		if (lump.offset < 0) or (lump.offset + lump.size > size) then errorf("'%s' is not a valid WAD file", filename) end
-		table.insert(directory, lump)
+		directory[i] = lump
 		lookup[lump.name] = i
 	end
+	directory.n = numlumps
 	wad.directory = directory
 	wad.lookup = lookup
 	return wad
@@ -97,14 +98,15 @@ function CreateWadCollection(...)
 	for iwad = 1, #args do
 		local wad = args[iwad]
 		if getmetatable(wad) ~= WAD then errorf("arg %i is not a WAD", iwad) end
-		table.insert(wads, wad)
-		for ilump = 1, #wad.directory do
+		wads[iwad] = wad
+		for ilump = 1, wad.directory.n do
 			local lump = wad.directory[ilump]
-			table.insert(directory, lump)
+			directory[insert] = lump
 			lookup[lump.name] = insert
 			insert = insert + 1
 		end
 	end
+	directory.n = insert - 1
 	local collection = setmetatable({}, WAD_COLLECTION)
 	collection.wads = wads
 	collection.directory = directory

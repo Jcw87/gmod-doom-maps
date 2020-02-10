@@ -52,8 +52,8 @@ SetConstant("NF_SUBSECTOR", 0x8000)
 
 function ReadThings(s)
 	local self = {}
-	local total = s:Size() / 10
-	for i = 1, total do
+	local count = s:Size() / 10
+	for i = 1, count do
 		self[i] = {}
 		self[i].x = s:ReadSInt16LE()
 		self[i].y = s:ReadSInt16LE()
@@ -61,13 +61,14 @@ function ReadThings(s)
 		self[i].type = s:ReadUInt16LE()
 		self[i].options = s:ReadUInt16LE()
 	end
+	self.n = count
 	return self
 end
 
 function ReadLinedefs(s)
 	local self = {}
-	local total = s:Size() / 14
-	for i = 1, total do
+	local count = s:Size() / 14
+	for i = 1, count do
 		self[i] = {}
 		self[i].v1num = s:ReadUInt16LE()
 		self[i].v2num = s:ReadUInt16LE()
@@ -78,13 +79,14 @@ function ReadLinedefs(s)
 		self[i].sidenum[1] = s:ReadUInt16LE()
 		self[i].sidenum[2] = s:ReadUInt16LE()
 	end
+	self.n = count
 	return self
 end
 
 function ReadSidedefs(s)
 	local self = {}
-	local total = s:Size() / 30
-	for i = 1, total do
+	local count = s:Size() / 30
+	for i = 1, count do
 		self[i] = {}
 		self[i].textureoffset = s:ReadSInt16LE()
 		self[i].rowoffset = s:ReadSInt16LE() * HEIGHTCORRECTION
@@ -93,24 +95,26 @@ function ReadSidedefs(s)
 		self[i].midtexture = s:Read(8):TrimRight("\0"):upper()
 		self[i].sectornum = s:ReadSInt16LE()
 	end
+	self.n = count
 	return self
 end
 
 function ReadVertexes(s)
 	local self = {}
-	local total = s:Size() / 4
-	for i = 1, total do
+	local count = s:Size() / 4
+	for i = 1, count do
 		self[i] = {}
 		self[i].x = s:ReadSInt16LE()
 		self[i].y = s:ReadSInt16LE()
 	end
+	self.n = count
 	return self
 end
 
 function ReadSegs(s)
 	local self = {}
-	local total = s:Size() / 12
-	for i = 1, total do
+	local count = s:Size() / 12
+	for i = 1, count do
 		self[i] = {}
 		self[i].v1 = s:ReadUInt16LE()
 		self[i].v2 = s:ReadUInt16LE()
@@ -119,24 +123,26 @@ function ReadSegs(s)
 		self[i].sidenum = s:ReadUInt16LE()
 		self[i].offset = s:ReadSInt16LE()
 	end
+	self.n = count
 	return self
 end
 
 function ReadSubsectors(s)
 	local self = {}
-	local total = s:Size() / 4
-	for i = 1, total do
+	local count = s:Size() / 4
+	for i = 1, count do
 		self[i] = {}
 		self[i].numsegs = s:ReadSInt16LE()
 		self[i].firstseg = s:ReadSInt16LE()
 	end
+	self.n = count
 	return self
 end
 
 function ReadNodes(s)
 	local self = {}
-	local total = s:Size() / 28
-	for i = 1, total do
+	local count = s:Size() / 28
+	for i = 1, count do
 		self[i] = {}
 		self[i].x = s:ReadSInt16LE()
 		self[i].y = s:ReadSInt16LE()
@@ -154,13 +160,14 @@ function ReadNodes(s)
 		self[i].children[1] = s:ReadUInt16LE()
 		self[i].children[2] = s:ReadUInt16LE()
 	end
+	self.n = count
 	return self
 end
 
 function ReadSectors(s)
 	local self = {}
-	local total = s:Size() / 26
-	for i = 1, total do
+	local count = s:Size() / 26
+	for i = 1, count do
 		self[i] = {}
 		self[i].floorheight = s:ReadSInt16LE() * HEIGHTCORRECTION
 		self[i].ceilingheight = s:ReadSInt16LE() * HEIGHTCORRECTION
@@ -170,6 +177,7 @@ function ReadSectors(s)
 		self[i].special = s:ReadUInt16LE()
 		self[i].tag = s:ReadUInt16LE()
 	end
+	self.n = count
 	return self
 end
 
@@ -206,7 +214,7 @@ MAP = MAP or {}
 MAP.__index = MAP
 
 function MAP:SetupSectors()
-	for i = 1, #self.Sectors do
+	for i = 1, self.Sectors.n do
 		local sector = self.Sectors[i]
 		sector.id = i
 		sector.lines = {}
@@ -220,7 +228,7 @@ function MAP:SetupSectors()
 end
 
 function MAP:SetupSidedefs()
-	for i = 1, #self.Sidedefs do
+	for i = 1, self.Sidedefs.n do
 		local sidedef = self.Sidedefs[i]
 		sidedef.id = i
 		sidedef.sector = self.Sectors[sidedef.sectornum+1]
@@ -228,7 +236,7 @@ function MAP:SetupSidedefs()
 end
 
 function MAP:SetupLinedefs()
-	for i = 1, #self.Linedefs do
+	for i = 1, self.Linedefs.n do
 		local linedef = self.Linedefs[i]
 		linedef.id = i
 		linedef.v1 = self.Vertexes[linedef.v1num+1]
@@ -272,7 +280,7 @@ end
 
 function MAP:SetupSegs()
 	local hit = {}
-	for i = 1, #self.Segs do
+	for i = 1, self.Segs.n do
 		local seg = self.Segs[i]
 		seg.id = i
 		if type(seg.v1) ~= "number" then print(i) end -- checking the type seems to prevent LuaJIT from screwing up
@@ -300,7 +308,7 @@ function MAP:SetupSegs()
 end
 
 function MAP:SetupSubsectors()
-	for i = 1, #self.Subsectors do
+	for i = 1, self.Subsectors.n do
 		local subsector = self.Subsectors[i]
 		subsector.id = i
 		subsector.segs = {}
@@ -323,7 +331,7 @@ end
 function MAP:SetupThings()
 	local gameskill = CvarGet("skill")
 	local skillbit = gameskill == sk_baby and 1 or gameskill == sk_nightmare and 4 or bit.lshift(1, gameskill-1)
-	for i = 1, #self.Things do
+	for i = 1, self.Things.n do
 		local thing = self.Things[i]
 		local subsector = self:PointInSubsector(thing.x, thing.y)
 		local pos = Vector(thing.x, thing.y, subsector.sector.floorheight + 0.5)
@@ -372,10 +380,10 @@ end
 
 function MAP:SetupBounds()
 	local mapbbox = CreateBounds()
-	for i = 1, #self.Vertexes do
+	for i = 1, self.Vertexes.n do
 		AddBounds(mapbbox, self.Vertexes[i])
 	end
-	for i = 1, #self.Sectors do
+	for i = 1, self.Sectors.n do
 		local sector = self.Sectors[i]
 		AddBoundsZ(mapbbox, sector.floorheight)
 		AddBoundsZ(mapbbox, sector.ceilingheight)
@@ -404,7 +412,7 @@ function MAP:Setup()
 	self:CreateMeshes()
 	
 	if CLIENT then
-		for i = 1, #self.Sectors do
+		for i = 1, self.Sectors.n do
 			UpdateSectorLight(self.Sectors[i])
 		end
 	end
@@ -415,7 +423,7 @@ function MAP:Setup()
 end
 
 function MAP:Spawn()
-	for i = 1, #self.Sectors do
+	for i = 1, self.Sectors.n do
 		if i % 10 == 0 then coroutine.yield() end
 		local sector = self.Sectors[i]
 		if #sector.lines == 0 then continue end -- ignore orphaned sectors
@@ -436,7 +444,7 @@ function MAP:Spawn()
 		end
 	end
 
-	for i = 1, #self.Linedefs do
+	for i = 1, self.Linedefs.n do
 		local line = self.Linedefs[i]
 		if tobool(bit.band(line.flags, ML_TWOSIDED)) and tobool(bit.band(line.flags, ML_BLOCKING)) then
 			local ent = ents.Create("doom_linedef")
@@ -459,8 +467,8 @@ function MAP:Spawn()
 end
 
 function MAP:PointInSubsector(x, y)
-	if #self.Nodes == 0 then return self.Subsectors[1] end
-	local nodeid = #self.Nodes - 1
+	if self.Nodes.n == 0 then return self.Subsectors[1] end
+	local nodeid = self.Nodes.n - 1
 	while not tobool(bit.band(nodeid, NF_SUBSECTOR)) do
 		local node = self.Nodes[nodeid+1]
 		local side

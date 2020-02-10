@@ -270,7 +270,7 @@ end
 function MAP:FindSectorFromLineTag(line)
 	start = 0
 	return function()
-		for i = start+1, #self.Sectors do
+		for i = start+1, self.Sectors.n do
 			start = i
 			if self.Sectors[i].tag == line.tag then return i end
 		end
@@ -279,7 +279,7 @@ end
 
 function MAP:LinedefSpecials()
 	sectorschanged = false
-	for i = 1, #self.Linedefs do
+	for i = 1, self.Linedefs.n do
 		local line = self.Linedefs[i]
 		local special = LinedefSpecials[line.special]
 		if not special then continue end
@@ -311,7 +311,7 @@ function MAP:LinedefSpecials()
 		end
 	end
 	-- hacky special case shit
-	for i = 1, #self.Sectors do
+	for i = 1, self.Sectors.n do
 		local sector = self.Sectors[i]
 		if sector.tag == 666 then 
 			if self.gamemode ~= commercial and self.gameepisode == 4 and self.gamemap == 6 then

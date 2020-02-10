@@ -289,12 +289,12 @@ local NewRender = CreateClientConVar("doom_map_cl_newrender", 0, false, false)
 cvars.AddChangeCallback("doom_map_cl_newrender", function(name, oldvalue, newvalue)
 	if not Map then return end
 	if tonumber(newvalue) ~= 0 then return end
-	for i = 1, #Map.Sidedefs do 
+	for i = 1, Map.Sidedefs.n do 
 		for _, mesh in pairs(Map.SideMeshes[i]) do
 			mesh.visible = true
 		end		
 	end
-	for i = 1, #Map.Sectors do
+	for i = 1, Map.Sectors.n do
 		for _, mesh in ipairs(Map.FloorMeshes[i]) do
 			mesh.visible = true
 		end
@@ -318,12 +318,12 @@ local function DrawMap(isDrawingDepth, isDrawSkybox)
 	--view = EyePos()
 	
 	-- TODO: do away with this and build render lists
-	for i = 1, #Map.Sidedefs do 
+	for i = 1, Map.Sidedefs.n do 
 		for _, mesh in pairs(Map.SideMeshes[i]) do
 			mesh.visible = false
 		end		
 	end
-	for i = 1, #Map.Sectors do
+	for i = 1, Map.Sectors.n do
 		for _, mesh in ipairs(Map.FloorMeshes[i]) do
 			mesh.visible = false
 		end
@@ -337,6 +337,6 @@ local function DrawMap(isDrawingDepth, isDrawSkybox)
 	
 	ClearClipRanges()
 	validcount = validcount + 1
-	R_RenderBSPNode(#Map.Nodes-1)
+	R_RenderBSPNode(Map.Nodes.n-1)
 end
 hook.Add("PreDrawOpaqueRenderables", "DOOM.DrawStaticMap", DrawMap)

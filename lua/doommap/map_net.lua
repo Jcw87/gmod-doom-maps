@@ -52,13 +52,14 @@ local lumpsendtypes = {
 	ML_NODES,
 	ML_SECTORS,
 }
+lumpsendtypes.n = #lumpsendtypes
 
 local function SendMapInfo(map, ply)
 	local lumps = map.lumps
 	net.Start("DOOM.Map")
 	net.WriteString(map.wadname)
 	net.WriteString(map.name)
-	for i = 1, #lumpsendtypes do
+	for i = 1, lumpsendtypes.n do
 		local type = lumpsendtypes[i]
 		net.WriteInt(lumps[type].numchunks, 8)
 		net.WriteData(lumps[type].hash, 16)
@@ -119,7 +120,7 @@ end
 
 hook.Add("DOOM.PlayerInitialSpawn", "DOOM.ChangeFloorTexture", function(ply)
 	if not Map then return end
-	for i = 1, #Map.Sectors do
+	for i = 1, Map.Sectors.n do
 		local sector = Map.Sectors[i]
 		if sector.floorpicchanged then SendChangeFloor(sector.id, sector.floorpic, ply) end
 	end
@@ -147,7 +148,7 @@ end
 
 hook.Add("DOOM.PlayerInitialSpawn", "DOOM.ChangeWallTexture", function(ply)
 	if not Map then return end
-	for i = 1, #Map.Sidedefs do
+	for i = 1, Map.Sidedefs.n do
 		local sidedef = Map.Sidedefs[i]
 		if sidedef.picchanged then
 			SendChangeWall(sidedef.id, top, sidedef.toptexture, ply)
@@ -186,7 +187,7 @@ local function NextMissingChunk()
 	local nextchunk
 	local receivedchunks = 0
 	local totalchunks = 0
-	for i = 1, #lumpsendtypes do
+	for i = 1, lumpsendtypes.n do
 		local type = lumpsendtypes[i]
 		local lump = lumps[type]
 		totalchunks = totalchunks + lump.numchunks
@@ -223,7 +224,7 @@ local function ReceiveMap(bits)
 	Map.name = name
 	
 	local lumps = {}
-	for i = 1, #lumpsendtypes do
+	for i = 1, lumpsendtypes.n do
 		local type = lumpsendtypes[i]
 		lumps[type] = {
 			numchunks = net.ReadInt(8),
@@ -236,7 +237,7 @@ local function ReceiveMap(bits)
 	if wad then
 		local lumpnum = wad:GetLumpNum(name)
 		if lumpnum then
-			for i = 1, #lumpsendtypes do
+			for i = 1, lumpsendtypes.n do
 				local type = lumpsendtypes[i]
 				local lump = lumps[type]
 				local data = wad:GetLumpByNum(lumpnum + type):ReadString()

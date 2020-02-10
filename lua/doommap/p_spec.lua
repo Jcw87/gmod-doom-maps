@@ -116,7 +116,7 @@ end
 function P_FindSectorFromLineTag(line)
 	local start = 0
 	return function()
-		for i = start+1, #Map.Sectors do
+		for i = start+1, Map.Sectors.n do
 			start = i
 			if Map.Sectors[i].tag == line.tag then return i end
 		end
@@ -347,7 +347,7 @@ local SpawnSpecials_Action = {
 }
 
 function P_SpawnSpecials()
-	for i = 1, #Map.Sectors do
+	for i = 1, Map.Sectors.n do
 		local sector = Map.Sectors[i]
 		if sector.special == 0 then continue end
 		local func = SpawnSpecials_Action[sector.special]
