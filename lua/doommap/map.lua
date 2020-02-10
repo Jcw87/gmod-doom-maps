@@ -69,8 +69,8 @@ function ReadLinedefs(s)
 	local total = s:Size() / 14
 	for i = 1, total do
 		self[i] = {}
-		self[i].v1 = s:ReadUInt16LE()
-		self[i].v2 = s:ReadUInt16LE()
+		self[i].v1num = s:ReadUInt16LE()
+		self[i].v2num = s:ReadUInt16LE()
 		self[i].flags = s:ReadUInt16LE()
 		self[i].special = s:ReadUInt16LE()
 		self[i].tag = s:ReadUInt16LE()
@@ -91,7 +91,7 @@ function ReadSidedefs(s)
 		self[i].toptexture = s:Read(8):TrimRight("\0"):upper()
 		self[i].bottomtexture = s:Read(8):TrimRight("\0"):upper()
 		self[i].midtexture = s:Read(8):TrimRight("\0"):upper()
-		self[i].sector = s:ReadSInt16LE()
+		self[i].sectornum = s:ReadSInt16LE()
 	end
 	return self
 end
@@ -115,8 +115,8 @@ function ReadSegs(s)
 		self[i].v1 = s:ReadUInt16LE()
 		self[i].v2 = s:ReadUInt16LE()
 		self[i].angle = s:ReadSInt16LE()
-		self[i].linedef = s:ReadUInt16LE()
-		self[i].side = s:ReadUInt16LE()
+		self[i].linedefnum = s:ReadUInt16LE()
+		self[i].sidenum = s:ReadUInt16LE()
 		self[i].offset = s:ReadSInt16LE()
 	end
 	return self
@@ -189,12 +189,12 @@ function ReadBlockmap(s)
 		s:Seek(offsets[i]*2)
 		local start0 = s:ReadSInt16LE() -- discard starting 0
 		if start0 != 0 then error("Blockmap invalid!") end
-		local lineid = s:ReadSInt16LE()
+		local linenum = s:ReadSInt16LE()
 		local currentoffset = offsets[i]*2 + 2
-		while lineid ~= -1 do
+		while linenum ~= -1 do
 			if currentoffset > size then error("Blockmap invalid!") end
-			table.insert(lines, lineid)
-			lineid = s:ReadSInt16LE()
+			table.insert(lines, linenum)
+			linenum = s:ReadSInt16LE()
 			currentoffset = currentoffset + 2
 		end
 		self[i] = lines
@@ -223,7 +223,7 @@ function MAP:SetupSidedefs()
 	for i = 1, #self.Sidedefs do
 		local sidedef = self.Sidedefs[i]
 		sidedef.id = i
-		sidedef.sector = self.Sectors[sidedef.sector+1]
+		sidedef.sector = self.Sectors[sidedef.sectornum+1]
 	end
 end
 
@@ -231,8 +231,8 @@ function MAP:SetupLinedefs()
 	for i = 1, #self.Linedefs do
 		local linedef = self.Linedefs[i]
 		linedef.id = i
-		linedef.v1 = self.Vertexes[linedef.v1+1]
-		linedef.v2 = self.Vertexes[linedef.v2+1]
+		linedef.v1 = self.Vertexes[linedef.v1num+1]
+		linedef.v2 = self.Vertexes[linedef.v2num+1]
 		linedef.dx = linedef.v2.x - linedef.v1.x
 		linedef.dy = linedef.v2.y - linedef.v1.y
 		if linedef.dx == 0 then
@@ -247,12 +247,13 @@ function MAP:SetupLinedefs()
 		linedef.bbox.right = math.max(linedef.v1.x, linedef.v2.x)
 		linedef.bbox.bottom = math.min(linedef.v1.y, linedef.v2.y)
 		linedef.bbox.top = math.max(linedef.v1.y, linedef.v2.y)
-		local sideindex = linedef.sidenum[1]
-		linedef.sidenum[1] = (sideindex ~= 65535) and self.Sidedefs[sideindex+1] or nil
-		sideindex = linedef.sidenum[2]
-		linedef.sidenum[2] = (sideindex ~= 65535) and self.Sidedefs[sideindex+1] or nil
-		if linedef.sidenum[1] then linedef.frontsector = linedef.sidenum[1].sector end
-		if linedef.sidenum[2] then linedef.backsector = linedef.sidenum[2].sector end
+		linedef.side = {}
+		local sidenum = linedef.sidenum[1]
+		linedef.side[1] = (sidenum ~= 65535) and self.Sidedefs[sidenum+1] or nil
+		sidenum = linedef.sidenum[2]
+		linedef.side[2] = (sidenum ~= 65535) and self.Sidedefs[sidenum+1] or nil
+		if linedef.side[1] then linedef.frontsector = linedef.side[1].sector end
+		if linedef.side[2] then linedef.backsector = linedef.side[2].sector end
 		if linedef.frontsector then table.insert(linedef.frontsector.lines, linedef) end
 		if linedef.backsector then table.insert(linedef.backsector.lines, linedef) end
 		linedef.normal = Vector(linedef.v2.y - linedef.v1.y, -(linedef.v2.x - linedef.v1.x), 0):GetNormalized()
@@ -278,11 +279,11 @@ function MAP:SetupSegs()
 		if type(seg.v2) ~= "number" then print(i) end
 		seg.v1 = self.Vertexes[seg.v1+1]
 		seg.v2 = self.Vertexes[seg.v2+1]
-		seg.linedef = self.Linedefs[seg.linedef+1]
-		local side = seg.side
-		seg.side = seg.linedef.sidenum[side+1]
+		seg.linedef = self.Linedefs[seg.linedefnum+1]
+		local sidenum = seg.sidenum
+		seg.side = seg.linedef.side[sidenum+1]
 		seg.frontsector = seg.side.sector
-		if tobool(bit.band(seg.linedef.flags, ML_TWOSIDED)) then seg.backsector = seg.linedef.sidenum[bit.bxor(side,1)+1].sector end
+		if tobool(bit.band(seg.linedef.flags, ML_TWOSIDED)) then seg.backsector = seg.linedef.side[bit.bxor(sidenum,1)+1].sector end
 		
 		-- 'slime trails' fix
 		local line = seg.linedef

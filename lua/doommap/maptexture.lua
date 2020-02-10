@@ -73,7 +73,7 @@ local function ReadMapTexture(s)
 		local patch = {}
 		patch.originx = s:ReadSInt16LE()
 		patch.originy = s:ReadSInt16LE()
-		patch.patch = s:ReadSInt16LE()
+		patch.num = s:ReadSInt16LE()
 		patch.stepdir = s:ReadSInt16LE()
 		patch.colormap = s:ReadSInt16LE()
 		self.patches[i] = patch
@@ -100,7 +100,7 @@ local function SetupTextures(pnames, textures)
 		local maptexture = textures[i]
 		for j = 1, #maptexture.patches do
 			local patch = maptexture.patches[j]
-			patch.patch = pnames[patch.patch+1]
+			patch.name = pnames[patch.num+1]
 		end
 		if CLIENT then maptexture:AllocateTexture() end
 	end
@@ -289,7 +289,7 @@ local PatchMaterial = CreateMaterial("doompatch", "UnlitGeneric", {["$alphatest"
 function MAPTEXTURE:Draw()
 	for i = 1, #self.patches do
 		local mappatch = self.patches[i]
-		local patch = GetTexRect(mappatch.patch)
+		local patch = GetTexRect(mappatch.name)
 		surface.SetDrawColor(255, 255, 255, 255)
 		PatchMaterial:SetTexture("$basetexture", patch.texture)
 		surface.SetMaterial(PatchMaterial)
@@ -340,7 +340,7 @@ hook.Add( "PreRender", "DOOM.DrawTextures", function()
 	for texture, _ in pairs(tUninitializedTextures) do
 		local ready = true
 		for __, patch in pairs(texture.patches) do
-			if not GetTexRect(patch.patch).loaded then ready = false break end
+			if not GetTexRect(patch.name).loaded then ready = false break end
 		end
 		if ready then
 			texture:WriteToTexture()

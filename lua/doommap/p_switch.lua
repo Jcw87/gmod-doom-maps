@@ -71,14 +71,14 @@ end
 
 function P_StartButton(line, w, texture, time)
 	timer.Simple(time/TICRATE, function()
-		local leftside = line.sidenum[1]
+		local leftside = line.side[1]
 		Map:ChangeWallTexture(leftside, w, texture)
 	end)
 end
 
 function P_ChangeSwitchTexture(line, useAgain)
 	if useAgain == 0 then line.special = 0 end
-	local leftside = line.sidenum[1]
+	local leftside = line.side[1]
 	local texTop = leftside.toptexture
     local texMid = leftside.midtexture
     local texBot = leftside.bottomtexture

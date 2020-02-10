@@ -32,10 +32,10 @@ local function P_RecursiveSound(sec, soundblocks)
 		P_LineOpening(check)
 		if openrange <= 0 then continue end
 		local other
-		if check.sidenum[1].sector.id == sec.id then
-			other = check.sidenum[2].sector
+		if check.side[1].sector.id == sec.id then
+			other = check.side[2].sector
 		else
-			other = check.sidenum[1].sector
+			other = check.side[1].sector
 		end
 		if tobool(bit.band(check.flags, ML_SOUNDBLOCK)) then
 			if soundblocks == 0 then

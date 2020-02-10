@@ -17,7 +17,7 @@ function ENT:Setup()
 	local lineid = self:GetLinedef()
 	self.linedef = self.Map.Linedefs[lineid]
 	if not self.linedef then return end
-	self.leftside = self.linedef.sidenum[1]
+	self.leftside = self.linedef.side[1]
 	local v1, v2 = self.linedef.v1, self.linedef.v2
 	self.offset = Vector((v1.x + v2.x)/2, (v1.y + v2.y)/2, self.leftside.sector.floorheight)
 	

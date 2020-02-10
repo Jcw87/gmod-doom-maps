@@ -76,7 +76,7 @@ function P_InterceptVector(v2, v1)
 end
 
 function P_LineOpening(linedef)
-	if not linedef.sidenum[2] then openrange = 0 return end
+	if not linedef.side[2] then openrange = 0 return end
 	local front = linedef.frontsector
 	local back = linedef.backsector
 	opentop = front.ceilingheight < back.ceilingheight and front.ceilingheight or back.ceilingheight

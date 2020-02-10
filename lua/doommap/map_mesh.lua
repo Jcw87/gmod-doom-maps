@@ -180,13 +180,13 @@ function MAP:BuildWalls(line, side)
 	if side == 1 then
 		v1 = line.v1
 		v2 = line.v2
-		thisside = line.sidenum[1]
-		otherside = line.sidenum[2]
+		thisside = line.side[1]
+		otherside = line.side[2]
 	elseif side == 2 then
 		v1 = line.v2
 		v2 = line.v1
-		thisside = line.sidenum[2]
-		otherside = line.sidenum[1]
+		thisside = line.side[2]
+		otherside = line.side[1]
 	else
 		error("Invalid Side: "..tostring(side))
 	end
@@ -317,8 +317,8 @@ function MAP:CreateMeshes()
 	-- Generate wall data for linedefs
 	for i = 1, #self.Linedefs do
 		local linedef = self.Linedefs[i]
-		local leftside = linedef.sidenum[1]
-		local rightside = linedef.sidenum[2]
+		local leftside = linedef.side[1]
+		local rightside = linedef.side[2]
 		if leftside then linedef.leftwalls = self:BuildWalls(linedef, 1) end
 		if rightside then linedef.rightwalls = self:BuildWalls(linedef, 2) end
 		if tobool(bit.band(linedef.flags, ML_TWOSIDED)) and tobool(bit.band(linedef.flags, ML_BLOCKING)) then
@@ -351,8 +351,8 @@ function MAP:CreateMeshes()
 			local linedef = self.Linedefs[i]
 			local leftwalls = linedef.leftwalls
 			local rightwalls = linedef.rightwalls
-			local leftsector = linedef.sidenum[1] and linedef.sidenum[1].sector
-			local rightsector = linedef.sidenum[2] and linedef.sidenum[2].sector
+			local leftsector = linedef.side[1] and linedef.side[1].sector
+			local rightsector = linedef.side[2] and linedef.side[2].sector
 			if leftwalls then
 				for j = 1, #leftwalls do
 					local wall = leftwalls[j]
@@ -381,11 +381,11 @@ function MAP:CreateMeshes()
 					if wall.sky then wall.material = GetFlatMaterial("F_SKY1") end
 					if not wall.sky and wall.special then
 						table.insert(self.SpecialMeshes[id], wall)
-						self.SideMeshes[linedef.sidenum[1].id][wall.texid] = wall
+						self.SideMeshes[linedef.side[1].id][wall.texid] = wall
 					else
 						table.insert(target[id], wall)
 						wall.visible = true
-						self.SideMeshes[linedef.sidenum[1].id][wall.texid] = wall
+						self.SideMeshes[linedef.side[1].id][wall.texid] = wall
 					end
 				end
 			end
@@ -416,11 +416,11 @@ function MAP:CreateMeshes()
 					if wall.sky then wall.material = GetFlatMaterial("F_SKY1") end
 					if not wall.sky and wall.special then
 						table.insert(self.SpecialMeshes[id], wall)
-						self.SideMeshes[linedef.sidenum[2].id][wall.texid] = wall
+						self.SideMeshes[linedef.side[2].id][wall.texid] = wall
 					else
 						table.insert(target[id], wall)
 						wall.visible = true
-						self.SideMeshes[linedef.sidenum[2].id][wall.texid] = wall
+						self.SideMeshes[linedef.side[2].id][wall.texid] = wall
 					end
 				end
 			end

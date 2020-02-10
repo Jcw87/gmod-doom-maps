@@ -211,11 +211,11 @@ function EV_VerticalDoor(line, thing)
 	
 	-- If a VerticalDoor was activated on a single sided linedef, the game crashed.
 	-- This can be illustrated in MAP06: The Crusher
-	if not line.sidenum[2] then
+	if not line.side[2] then
 		if player then ent:ChatPrint("Fun fact: That wall you just used would have crashed Doom.") end
 		return
 	end
-	sec = line.sidenum[2].sector
+	sec = line.side[2].sector
 	if not sec.ceiling then return end
 	if sec.specialdata then
 		door = sec.specialdata

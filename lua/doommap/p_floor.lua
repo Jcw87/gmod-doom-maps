@@ -154,9 +154,9 @@ local DoFloor_Type = {
 		for i = 1, #floor.sector.lines do
 			local line = floor.sector.lines[i]
 			if tobool(bit.band(line.flags, ML_TWOSIDED)) then
-				local texture = GetMapTexture(line.sidenum[1].bottomtexture)
+				local texture = GetMapTexture(line.side[1].bottomtexture)
 				if texture and texture.height < minsize then minsize = texture.height end
-				texture = GetMapTexture(line.sidenum[2].bottomtexture)
+				texture = GetMapTexture(line.side[2].bottomtexture)
 				if texture and texture.height < minsize then minsize = texture.height end
 			end
 		end
@@ -170,8 +170,8 @@ local DoFloor_Type = {
 		for i = 1, #floor.sector.lines do
 			local line = floor.sector.lines[i]
 			if tobool(bit.band(line.flags, ML_TWOSIDED)) then
-				local sec = line.sidenum[1].sector
-				if sec.id == floor.sector.id then sec = line.sidenum[2].sector end
+				local sec = line.side[1].sector
+				if sec.id == floor.sector.id then sec = line.side[2].sector end
 				if sec.floorheight == floor.floordestheight then
 					floor.texture = sec.floorpic;
 					floor.newspecial = sec.special;
