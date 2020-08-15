@@ -42,41 +42,41 @@ local iTexFlags = bit.bor(
 )
 
 local function ReadPnames(s)
-	local self = {}
+	local names = {}
 	local nummappatches = s:ReadSInt32LE()
 	for i = 1, nummappatches do
-		self[i] = s:Read(8):TrimRight("\0"):upper()
+		names[i] = s:Read(8):TrimRight("\0"):upper()
 	end
-	return self
+	return names
 end
 
 MAPTEXTURE = MAPTEXTURE or {}
 MAPTEXTURE.__index = MAPTEXTURE
 
 local function ReadMapTexture(s)
-	local self = setmetatable( {}, MAPTEXTURE )
+	local tex = setmetatable( {}, MAPTEXTURE )
 
-	self.name = s:Read(8):TrimRight("\0")
-	self.masked = tobool(s:ReadSInt32LE())
-	self.width = s:ReadSInt16LE()
-	self.height = s:ReadSInt16LE()
-	self.columndirectory = s:ReadSInt32LE() -- OBSOLETE
-	self.patchcount = s:ReadSInt16LE()
-	self.patches = {}
-	for i = 1, self.patchcount do
+	tex.name = s:Read(8):TrimRight("\0")
+	tex.masked = tobool(s:ReadSInt32LE())
+	tex.width = s:ReadSInt16LE()
+	tex.height = s:ReadSInt16LE()
+	tex.columndirectory = s:ReadSInt32LE() -- OBSOLETE
+	tex.patchcount = s:ReadSInt16LE()
+	tex.patches = {}
+	for i = 1, tex.patchcount do
 		local patch = {}
 		patch.originx = s:ReadSInt16LE()
 		patch.originy = s:ReadSInt16LE()
 		patch.num = s:ReadSInt16LE()
 		patch.stepdir = s:ReadSInt16LE()
 		patch.colormap = s:ReadSInt16LE()
-		self.patches[i] = patch
+		tex.patches[i] = patch
 	end
-	return self
+	return tex
 end
 
 local function ReadTextureLump(s)
-	local self = {}
+	local textures = {}
 	local numtextures = s:ReadSInt32LE()
 	local offsets = {}
 	for i = 1, numtextures do
@@ -84,9 +84,9 @@ local function ReadTextureLump(s)
 	end
 	for i = 1, numtextures do
 		s:Seek(offsets[i])
-		self[i] = ReadMapTexture(s)
+		textures[i] = ReadMapTexture(s)
 	end
-	return self
+	return textures
 end
 
 local function SetupTextures(pnames, textures)

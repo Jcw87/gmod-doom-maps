@@ -50,145 +50,145 @@ EnumAdd("ST_NEGATIVE")
 SetConstant("NF_SUBSECTOR", 0x8000)
 
 function ReadThings(s)
-	local self = {}
+	local things = {}
 	local count = s:Size() / 10
 	for i = 1, count do
-		self[i] = {}
-		self[i].x = s:ReadSInt16LE()
-		self[i].y = s:ReadSInt16LE()
-		self[i].angle = s:ReadSInt16LE()
-		self[i].type = s:ReadUInt16LE()
-		self[i].options = s:ReadUInt16LE()
+		things[i] = {}
+		things[i].x = s:ReadSInt16LE()
+		things[i].y = s:ReadSInt16LE()
+		things[i].angle = s:ReadSInt16LE()
+		things[i].type = s:ReadUInt16LE()
+		things[i].options = s:ReadUInt16LE()
 	end
-	self.n = count
-	return self
+	things.n = count
+	return things
 end
 
 function ReadLinedefs(s)
-	local self = {}
+	local linedefs = {}
 	local count = s:Size() / 14
 	for i = 1, count do
-		self[i] = {}
-		self[i].v1num = s:ReadUInt16LE()
-		self[i].v2num = s:ReadUInt16LE()
-		self[i].flags = s:ReadUInt16LE()
-		self[i].special = s:ReadUInt16LE()
-		self[i].tag = s:ReadUInt16LE()
-		self[i].sidenum = {}
-		self[i].sidenum[1] = s:ReadUInt16LE()
-		self[i].sidenum[2] = s:ReadUInt16LE()
+		linedefs[i] = {}
+		linedefs[i].v1num = s:ReadUInt16LE()
+		linedefs[i].v2num = s:ReadUInt16LE()
+		linedefs[i].flags = s:ReadUInt16LE()
+		linedefs[i].special = s:ReadUInt16LE()
+		linedefs[i].tag = s:ReadUInt16LE()
+		linedefs[i].sidenum = {}
+		linedefs[i].sidenum[1] = s:ReadUInt16LE()
+		linedefs[i].sidenum[2] = s:ReadUInt16LE()
 	end
-	self.n = count
-	return self
+	linedefs.n = count
+	return linedefs
 end
 
 function ReadSidedefs(s)
-	local self = {}
+	local sidedefs = {}
 	local count = s:Size() / 30
 	for i = 1, count do
-		self[i] = {}
-		self[i].textureoffset = s:ReadSInt16LE()
-		self[i].rowoffset = s:ReadSInt16LE() * HEIGHTCORRECTION
-		self[i].toptexture = s:Read(8):TrimRight("\0"):upper()
-		self[i].bottomtexture = s:Read(8):TrimRight("\0"):upper()
-		self[i].midtexture = s:Read(8):TrimRight("\0"):upper()
-		self[i].sectornum = s:ReadSInt16LE()
+		sidedefs[i] = {}
+		sidedefs[i].textureoffset = s:ReadSInt16LE()
+		sidedefs[i].rowoffset = s:ReadSInt16LE() * HEIGHTCORRECTION
+		sidedefs[i].toptexture = s:Read(8):TrimRight("\0"):upper()
+		sidedefs[i].bottomtexture = s:Read(8):TrimRight("\0"):upper()
+		sidedefs[i].midtexture = s:Read(8):TrimRight("\0"):upper()
+		sidedefs[i].sectornum = s:ReadSInt16LE()
 	end
-	self.n = count
-	return self
+	sidedefs.n = count
+	return sidedefs
 end
 
 function ReadVertexes(s)
-	local self = {}
+	local verts = {}
 	local count = s:Size() / 4
 	for i = 1, count do
-		self[i] = {}
-		self[i].x = s:ReadSInt16LE()
-		self[i].y = s:ReadSInt16LE()
+		verts[i] = {}
+		verts[i].x = s:ReadSInt16LE()
+		verts[i].y = s:ReadSInt16LE()
 	end
-	self.n = count
-	return self
+	verts.n = count
+	return verts
 end
 
 function ReadSegs(s)
-	local self = {}
+	local segs = {}
 	local count = s:Size() / 12
 	for i = 1, count do
-		self[i] = {}
-		self[i].v1 = s:ReadUInt16LE()
-		self[i].v2 = s:ReadUInt16LE()
-		self[i].angle = s:ReadSInt16LE()
-		self[i].linedefnum = s:ReadUInt16LE()
-		self[i].sidenum = s:ReadUInt16LE()
-		self[i].offset = s:ReadSInt16LE()
+		segs[i] = {}
+		segs[i].v1 = s:ReadUInt16LE()
+		segs[i].v2 = s:ReadUInt16LE()
+		segs[i].angle = s:ReadSInt16LE()
+		segs[i].linedefnum = s:ReadUInt16LE()
+		segs[i].sidenum = s:ReadUInt16LE()
+		segs[i].offset = s:ReadSInt16LE()
 	end
-	self.n = count
-	return self
+	segs.n = count
+	return segs
 end
 
 function ReadSubsectors(s)
-	local self = {}
+	local subsectors = {}
 	local count = s:Size() / 4
 	for i = 1, count do
-		self[i] = {}
-		self[i].numsegs = s:ReadSInt16LE()
-		self[i].firstseg = s:ReadSInt16LE()
+		subsectors[i] = {}
+		subsectors[i].numsegs = s:ReadSInt16LE()
+		subsectors[i].firstseg = s:ReadSInt16LE()
 	end
-	self.n = count
-	return self
+	subsectors.n = count
+	return subsectors
 end
 
 function ReadNodes(s)
-	local self = {}
+	local nodes = {}
 	local count = s:Size() / 28
 	for i = 1, count do
-		self[i] = {}
-		self[i].x = s:ReadSInt16LE()
-		self[i].y = s:ReadSInt16LE()
-		self[i].dx = s:ReadSInt16LE()
-		self[i].dy = s:ReadSInt16LE()
-		self[i].bbox = {}
+		nodes[i] = {}
+		nodes[i].x = s:ReadSInt16LE()
+		nodes[i].y = s:ReadSInt16LE()
+		nodes[i].dx = s:ReadSInt16LE()
+		nodes[i].dy = s:ReadSInt16LE()
+		nodes[i].bbox = {}
 		for j = 1, 2 do
-			self[i].bbox[j] = {}
-			self[i].bbox[j].top = s:ReadSInt16LE()
-			self[i].bbox[j].bottom = s:ReadSInt16LE()
-			self[i].bbox[j].left = s:ReadSInt16LE()
-			self[i].bbox[j].right = s:ReadSInt16LE()
+			nodes[i].bbox[j] = {}
+			nodes[i].bbox[j].top = s:ReadSInt16LE()
+			nodes[i].bbox[j].bottom = s:ReadSInt16LE()
+			nodes[i].bbox[j].left = s:ReadSInt16LE()
+			nodes[i].bbox[j].right = s:ReadSInt16LE()
 		end
-		self[i].children = {}
-		self[i].children[1] = s:ReadUInt16LE()
-		self[i].children[2] = s:ReadUInt16LE()
+		nodes[i].children = {}
+		nodes[i].children[1] = s:ReadUInt16LE()
+		nodes[i].children[2] = s:ReadUInt16LE()
 	end
-	self.n = count
-	return self
+	nodes.n = count
+	return nodes
 end
 
 function ReadSectors(s)
-	local self = {}
+	local sectors = {}
 	local count = s:Size() / 26
 	for i = 1, count do
-		self[i] = {}
-		self[i].floorheight = s:ReadSInt16LE() * HEIGHTCORRECTION
-		self[i].ceilingheight = s:ReadSInt16LE() * HEIGHTCORRECTION
-		self[i].floorpic = s:Read(8):TrimRight("\0"):upper()
-		self[i].ceilingpic = s:Read(8):TrimRight("\0"):upper()
-		self[i].lightlevel = s:ReadSInt16LE()
-		self[i].special = s:ReadUInt16LE()
-		self[i].tag = s:ReadUInt16LE()
+		sectors[i] = {}
+		sectors[i].floorheight = s:ReadSInt16LE() * HEIGHTCORRECTION
+		sectors[i].ceilingheight = s:ReadSInt16LE() * HEIGHTCORRECTION
+		sectors[i].floorpic = s:Read(8):TrimRight("\0"):upper()
+		sectors[i].ceilingpic = s:Read(8):TrimRight("\0"):upper()
+		sectors[i].lightlevel = s:ReadSInt16LE()
+		sectors[i].special = s:ReadUInt16LE()
+		sectors[i].tag = s:ReadUInt16LE()
 	end
-	self.n = count
-	return self
+	sectors.n = count
+	return sectors
 end
 
 function ReadBlockmap(s)
-	local self = {}
+	local blockmap = {}
 	local size = s:Size()
-	self.bmaporgx = s:ReadSInt16LE()
-	self.bmaporgy = s:ReadSInt16LE()
-	self.bmapwidth = s:ReadSInt16LE()
-	self.bmapheight = s:ReadSInt16LE()
+	blockmap.bmaporgx = s:ReadSInt16LE()
+	blockmap.bmaporgy = s:ReadSInt16LE()
+	blockmap.bmapwidth = s:ReadSInt16LE()
+	blockmap.bmapheight = s:ReadSInt16LE()
 	local offsets = {}
-	for i = 1, (self.bmapwidth * self.bmapheight) do
+	for i = 1, (blockmap.bmapwidth * blockmap.bmapheight) do
 		offsets[i] = s:ReadUInt16LE()
 	end
 	for i = 1, #offsets do
@@ -204,9 +204,9 @@ function ReadBlockmap(s)
 			linenum = s:ReadSInt16LE()
 			currentoffset = currentoffset + 2
 		end
-		self[i] = lines
+		blockmap[i] = lines
 	end
-	return self
+	return blockmap
 end
 
 MAP = MAP or {}
@@ -515,47 +515,47 @@ end
 
 function LoadMap(wadname, mapname)
 	if Map then return end
-	self = setmetatable( {}, MAP )
-	self.wadname = wadname
+	local map = setmetatable( {}, MAP )
+	map.wadname = wadname
 	local wad = OpenWad(wadname)
 	if not wad then
 		print(string.format("WAD %s not found!", wadname))
 		return
 	end
-	local episode, map = GetMapNum(mapname)
-	self.gamemode = GetDoomGamemode(wad)
-	if self.gamemode == indetermined then return end
-	self.gameepisode = episode
-	self.gamemap = map
-	self.name = mapname
-	local lumpnum = wad:GetLumpNum(self.name)
+	local gameepisode, gamemap = GetMapNum(mapname)
+	map.gamemode = GetDoomGamemode(wad)
+	if map.gamemode == indetermined then return end
+	map.gameepisode = gameepisode
+	map.gamemap = gamemap
+	map.name = mapname
+	local lumpnum = wad:GetLumpNum(map.name)
 	if not lumpnum then
-		print(string.format("MAP %s not found in WAD %s!", self.name, wadname))
+		print(string.format("MAP %s not found in WAD %s!", map.name, wadname))
 		return
 	end
-	self.Things = ReadThings(wad:GetLumpByNum(lumpnum + ML_THINGS):ReadStream())
-	self.Linedefs = ReadLinedefs(wad:GetLumpByNum(lumpnum + ML_LINEDEFS):ReadStream())
-	self.Sidedefs = ReadSidedefs(wad:GetLumpByNum(lumpnum + ML_SIDEDEFS):ReadStream())
-	self.Vertexes = ReadVertexes(wad:GetLumpByNum(lumpnum + ML_VERTEXES):ReadStream())
-	self.Segs = ReadSegs(wad:GetLumpByNum(lumpnum + ML_SEGS):ReadStream())
-	self.Subsectors = ReadSubsectors(wad:GetLumpByNum(lumpnum + ML_SSECTORS):ReadStream())
-	self.Nodes = ReadNodes(wad:GetLumpByNum(lumpnum + ML_NODES):ReadStream())
-	self.Sectors = ReadSectors(wad:GetLumpByNum(lumpnum + ML_SECTORS):ReadStream())
-	self.Blockmap = ReadBlockmap(wad:GetLumpByNum(lumpnum + ML_BLOCKMAP):ReadStream())
+	map.Things = ReadThings(wad:GetLumpByNum(lumpnum + ML_THINGS):ReadStream())
+	map.Linedefs = ReadLinedefs(wad:GetLumpByNum(lumpnum + ML_LINEDEFS):ReadStream())
+	map.Sidedefs = ReadSidedefs(wad:GetLumpByNum(lumpnum + ML_SIDEDEFS):ReadStream())
+	map.Vertexes = ReadVertexes(wad:GetLumpByNum(lumpnum + ML_VERTEXES):ReadStream())
+	map.Segs = ReadSegs(wad:GetLumpByNum(lumpnum + ML_SEGS):ReadStream())
+	map.Subsectors = ReadSubsectors(wad:GetLumpByNum(lumpnum + ML_SSECTORS):ReadStream())
+	map.Nodes = ReadNodes(wad:GetLumpByNum(lumpnum + ML_NODES):ReadStream())
+	map.Sectors = ReadSectors(wad:GetLumpByNum(lumpnum + ML_SECTORS):ReadStream())
+	map.Blockmap = ReadBlockmap(wad:GetLumpByNum(lumpnum + ML_BLOCKMAP):ReadStream())
 
-	self:Setup()
-	self:SetupBlockmap()
-	self:SetupNet(wad)
+	map:Setup()
+	map:SetupBlockmap()
+	map:SetupNet(wad)
 	wad:Close()
 
-	Map = self
+	Map = map
 
 	if SERVER then
-		local co = coroutine.wrap(self.Spawn)
-		co(self)
+		local co = coroutine.wrap(map.Spawn)
+		co(map)
 		timer.Create("DOOM.LoadMap", 0.1, 0, co)
 	end
-	return self
+	return map
 end
 
 local removeclasses = {

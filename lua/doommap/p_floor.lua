@@ -57,9 +57,9 @@ function T_MovePlane(sector, speed, dest, crush, floorOrCeiling, direction)
 		if crush and not tobool(bit.band(LevelTime(), 3)) then
 			P_DamageEnt(blocker, ent, ent, 10)
 			if blocker:IsPlayer() or blocker:IsNPC() then
-				local pos = blocker:GetPos()
-				pos.z = pos.z + blocker:OBBCenter().z
-				SpawnBlood(pos, 10)
+				local bpos = blocker:GetPos()
+				bpos.z = bpos.z + blocker:OBBCenter().z
+				SpawnBlood(bpos, 10)
 			end
 		end
 
@@ -162,7 +162,7 @@ local DoFloor_Type = {
 		end
 		floor.floordestheight = floor.sector.floorheight + minsize * HEIGHTCORRECTION
 	end,
-	[lowerAndChange] = function(floor, line)
+	[lowerAndChange] = function(floor)
 		floor.direction = -1
 	    floor.speed = FLOORSPEED
 	    floor.floordestheight = P_FindLowestFloorSurrounding(floor.sector)
