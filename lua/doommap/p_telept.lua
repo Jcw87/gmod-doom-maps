@@ -23,9 +23,9 @@ function EV_Teleport(line, side, thing)
 
 			CreateClientsideMobj(oldpos, oldang, MT_TFOG)
 			sound.Play("doom.sfx_telept", oldpos)
-			CreateClientsideMobj(pos + angle:Forward()*20, angle, MT_TFOG)
+			CreateClientsideMobj(pos + angle:Forward() * 20, angle, MT_TFOG)
 			sound.Play("doom.sfx_telept", pos)
-			
+
 			if thing:IsPlayer() then thing:SetEyeAngles(angle) else thing:SetAngles(angle) end
 			thing:SetLocalVelocity(Vector(0, 0, 0))
 			return true

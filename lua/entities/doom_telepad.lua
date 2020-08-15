@@ -9,7 +9,7 @@ ENT.AdminOnly            = false
 ENT.RenderGroup = RENDERGROUP_OPAQUE
 
 function ENT:SpawnFunction( ply, tr, ClassName )
-    if not tr.Hit then return end
+	if not tr.Hit then return end
 	if not DOOM then
 		ply:ChatPrint("gmDoom is required!")
 		return
@@ -18,14 +18,14 @@ function ENT:SpawnFunction( ply, tr, ClassName )
 		ply:ChatPrint("gmDoom Maps did not load correctly. Make sure you have gmDoom installed and enabled.")
 		return
 	end
-    
-    local SpawnPos = tr.HitPos
-    
-    local ent = ents.Create( ClassName )
-        ent:SetPos( SpawnPos )
-    ent:Spawn()
-    
-    return ent
+
+	local SpawnPos = tr.HitPos
+
+	local ent = ents.Create( ClassName )
+		ent:SetPos( SpawnPos )
+	ent:Spawn()
+
+	return ent
 end
 
 if SERVER then
@@ -41,7 +41,7 @@ function ENT:StartTouch(ent)
 	local spawn = DOOM.FindPlayerStart()
 	if not spawn then return end
 	local pos = spawn:GetPos()
-		
+
 	local oldpos = ent:GetPos()
 	local oldang = ent:GetAngles()
 	if not DOOM.P_TeleportMove(ent, pos.x, pos.y) then return false end
@@ -51,13 +51,13 @@ function ENT:StartTouch(ent)
 
 	DOOM.CreateClientsideMobj(oldpos, oldang, DOOM.MT_TFOG)
 	sound.Play("doom.sfx_telept", oldpos)
-	DOOM.CreateClientsideMobj(pos + angle:Forward()*20, angle, DOOM.MT_TFOG)
+	DOOM.CreateClientsideMobj(pos + angle:Forward() * 20, angle, DOOM.MT_TFOG)
 	sound.Play("doom.sfx_telept", pos)
 
 	ent:SetHull( Vector(-16, -16, 0), Vector(16, 16, 56 * DOOM.HEIGHTCORRECTION - 0.1))
 	ent:SetStepSize(24 * DOOM.HEIGHTCORRECTION)
-	ent:SetWalkSpeed(8.333*DOOM.TICRATE)
-	ent:SetRunSpeed(16.666*DOOM.TICRATE)
+	ent:SetWalkSpeed(8.333 * DOOM.TICRATE)
+	ent:SetRunSpeed(16.666 * DOOM.TICRATE)
 	ent:SendLua("LocalPlayer():SetHull(Vector(-16,-16,0),Vector(16,16,56*DOOM.HEIGHTCORRECTION-0.1)) LocalPlayer():SetStepSize(24*DOOM.HEIGHTCORRECTION)")
 	if not ent:HasWeapon("doom_weapon_pistol") then
 		ent:Give("doom_weapon_fist")

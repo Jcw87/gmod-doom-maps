@@ -1,7 +1,6 @@
 local bit = bit
 local file = file
 local io = io
-local os = os
 local string = string
 
 local error = error
@@ -48,79 +47,79 @@ end
 function BASE:ReadUInt16LE()
 	local str = self:Read(2)
 	local b1, b2 = string.byte(str, 1, 2)
-	return b1 + b2*256
+	return b1 + b2 * 256
 end
 
 function BASE:ReadSInt16LE()
 	local str = self:Read(2)
 	local b1, b2 = string.byte(str, 1, 2)
 	if b2 > 127 then b2 = b2 - 256 end
-	return b1 + b2*256
+	return b1 + b2 * 256
 end
 
 function BASE:ReadUInt24LE()
 	local str = self:Read(3)
 	local b1, b2, b3 = string.byte(str, 1, 3)
-	return b1 + b2*256 + b3*65536
+	return b1 + b2 * 256 + b3 * 65536
 end
 
 function BASE:ReadSInt24LE()
 	local str = self:Read(3)
 	local b1, b2, b3 = string.byte(str, 1, 3)
 	if b3 > 127 then b3 = b3 - 256 end
-	return b1 + b2*256 + b3*65536
+	return b1 + b2 * 256 + b3 * 65536
 end
 
 function BASE:ReadUInt32LE()
 	local str = self:Read(4)
 	local b1, b2, b3, b4 = string.byte(str, 1, 4)
-	return b1 + b2*256 + b3*65536 + b4*16777216
+	return b1 + b2 * 256 + b3 * 65536 + b4 * 16777216
 end
 
 function BASE:ReadSInt32LE()
 	local str = self:Read(4)
 	local b1, b2, b3, b4 = string.byte(str, 1, 4)
 	if b4 > 127 then b4 = b4 - 256 end
-	return b1 + b2*256 + b3*65536 + b4*16777216
+	return b1 + b2 * 256 + b3 * 65536 + b4 * 16777216
 end
 
 function BASE:ReadUInt16BE()
 	local str = self:Read(2)
 	local b1, b2 = string.byte(str, 1, 2)
-	return b1*256 + b2
+	return b1 * 256 + b2
 end
 
 function BASE:ReadSInt16BE()
 	local str = self:Read(2)
 	local b1, b2 = string.byte(str, 1, 2)
 	if b1 > 127 then b1 = b1 - 256 end
-	return b1*256 + b2
+	return b1 * 256 + b2
 end
 
 function BASE:ReadUInt24BE()
 	local str = self:Read(3)
 	local b1, b2, b3 = string.byte(str, 1, 3)
-	return b1*65536 + b2*256 + b3
+	return b1 * 65536 + b2 * 256 + b3
 end
 
 function BASE:ReadSInt24BE()
 	local str = self:Read(3)
 	local b1, b2, b3 = string.byte(str, 1, 3)
 	if b1 > 127 then b1 = b1 - 256 end
-	return b1*65536 + b2*256 + b3
+	return b1 * 65536 + b2 * 256 + b3
 end
 
 function BASE:ReadUInt32BE()
 	local str = self:Read(4)
 	local b1, b2, b3, b4 = string.byte(str, 1, 4)
-	return b1*16777216 + b2*65536 + b3*256 + b4
+	return b1 * 16777216 + b2 * 65536 + b3 * 256 + b4
 end
 
 function BASE:ReadSInt32BE()
 	local str = self:Read(4)
 	local b1, b2, b3, b4 = string.byte(str, 1, 4)
 	if b1 > 127 then b1 = b1 - 256 end
-	return b1*16777216 + b2*65536 + b3*256 + b4
+	return b1 * 16777216 + b2 * 65536 + b3 * 256 + b4
 end
 
 local function ReadFloat32(x)
@@ -395,7 +394,7 @@ end
 function wrap(object)
 	local t = {}
 	t.o = object
-	
+
 	local type1 = type(object)
 
 	if type1 == "string" then
@@ -408,6 +407,6 @@ function wrap(object)
 	else
 		error(string.format("Unknown object type '%s' for stream!", type1))
 	end
-	
+
 	return t
 end

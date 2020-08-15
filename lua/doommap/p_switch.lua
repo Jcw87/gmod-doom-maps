@@ -1,6 +1,4 @@
 
-local print = print
-
 local bit = bit
 local sound = sound
 local timer = timer
@@ -17,60 +15,60 @@ EnumAdd("bottom")
 local alphSwitchList = {
 	-- Doom shareware episode 1 switches
 	{"SW1BRCOM",	"SW2BRCOM"},
-    {"SW1BRN1",		"SW2BRN1"},
-    {"SW1BRN2",		"SW2BRN2"},
-    {"SW1BRNGN",	"SW2BRNGN"},
-    {"SW1BROWN",	"SW2BROWN"},
-    {"SW1COMM",		"SW2COMM"},
-    {"SW1COMP",		"SW2COMP"},
-    {"SW1DIRT",		"SW2DIRT"},
-    {"SW1EXIT",		"SW2EXIT"},
-    {"SW1GRAY",		"SW2GRAY"},
-    {"SW1GRAY1",	"SW2GRAY1"},
-    {"SW1METAL",	"SW2METAL"},
-    {"SW1PIPE",		"SW2PIPE"},
-    {"SW1SLAD",		"SW2SLAD"},
-    {"SW1STARG",	"SW2STARG"},
-    {"SW1STON1",	"SW2STON1"},
-    {"SW1STON2",	"SW2STON2"},
-    {"SW1STONE",	"SW2STONE"},
-    {"SW1STRTN",	"SW2STRTN"},
-    
-    -- Doom registered episodes 2&3 switches
-    {"SW1BLUE",		"SW2BLUE"},
-    {"SW1CMT",		"SW2CMT"},
-    {"SW1GARG",		"SW2GARG"},
-    {"SW1GSTON",	"SW2GSTON"},
-    {"SW1HOT",		"SW2HOT"},
-    {"SW1LION",		"SW2LION"},
-    {"SW1SATYR",	"SW2SATYR"},
-    {"SW1SKIN",		"SW2SKIN"},
-    {"SW1VINE",		"SW2VINE"},
-    {"SW1WOOD",		"SW2WOOD"},
-    
-    -- Doom II switches
-    {"SW1PANEL",	"SW2PANEL"},
-    {"SW1ROCK",		"SW2ROCK"},
-    {"SW1MET2",		"SW2MET2"},
-    {"SW1WDMET",	"SW2WDMET"},
-    {"SW1BRIK",		"SW2BRIK"},
-    {"SW1MOD1",		"SW2MOD1"},
-    {"SW1ZIM",		"SW2ZIM"},
-    {"SW1STON6",	"SW2STON6"},
-    {"SW1TEK",		"SW2TEK"},
-    {"SW1MARB",		"SW2MARB"},
-    {"SW1SKULL",	"SW2SKULL"}
+	{"SW1BRN1",		"SW2BRN1"},
+	{"SW1BRN2",		"SW2BRN2"},
+	{"SW1BRNGN",	"SW2BRNGN"},
+	{"SW1BROWN",	"SW2BROWN"},
+	{"SW1COMM",		"SW2COMM"},
+	{"SW1COMP",		"SW2COMP"},
+	{"SW1DIRT",		"SW2DIRT"},
+	{"SW1EXIT",		"SW2EXIT"},
+	{"SW1GRAY",		"SW2GRAY"},
+	{"SW1GRAY1",	"SW2GRAY1"},
+	{"SW1METAL",	"SW2METAL"},
+	{"SW1PIPE",		"SW2PIPE"},
+	{"SW1SLAD",		"SW2SLAD"},
+	{"SW1STARG",	"SW2STARG"},
+	{"SW1STON1",	"SW2STON1"},
+	{"SW1STON2",	"SW2STON2"},
+	{"SW1STONE",	"SW2STONE"},
+	{"SW1STRTN",	"SW2STRTN"},
+
+	-- Doom registered episodes 2&3 switches
+	{"SW1BLUE",		"SW2BLUE"},
+	{"SW1CMT",		"SW2CMT"},
+	{"SW1GARG",		"SW2GARG"},
+	{"SW1GSTON",	"SW2GSTON"},
+	{"SW1HOT",		"SW2HOT"},
+	{"SW1LION",		"SW2LION"},
+	{"SW1SATYR",	"SW2SATYR"},
+	{"SW1SKIN",		"SW2SKIN"},
+	{"SW1VINE",		"SW2VINE"},
+	{"SW1WOOD",		"SW2WOOD"},
+
+	-- Doom II switches
+	{"SW1PANEL",	"SW2PANEL"},
+	{"SW1ROCK",		"SW2ROCK"},
+	{"SW1MET2",		"SW2MET2"},
+	{"SW1WDMET",	"SW2WDMET"},
+	{"SW1BRIK",		"SW2BRIK"},
+	{"SW1MOD1",		"SW2MOD1"},
+	{"SW1ZIM",		"SW2ZIM"},
+	{"SW1STON6",	"SW2STON6"},
+	{"SW1TEK",		"SW2TEK"},
+	{"SW1MARB",		"SW2MARB"},
+	{"SW1SKULL",	"SW2SKULL"}
 }
 
 local switchlist = {}
 
 for i = 1, #alphSwitchList do
-	switchlist[(i-1)*2] = alphSwitchList[i][1]
-	switchlist[(i-1)*2+1] = alphSwitchList[i][2]
+	switchlist[(i - 1) * 2] = alphSwitchList[i][1]
+	switchlist[(i - 1) * 2 + 1] = alphSwitchList[i][2]
 end
 
 function P_StartButton(line, w, texture, time)
-	timer.Simple(time/TICRATE, function()
+	timer.Simple(time / TICRATE, function()
 		local leftside = line.side[1]
 		Map:ChangeWallTexture(leftside, w, texture)
 	end)
@@ -80,11 +78,11 @@ function P_ChangeSwitchTexture(line, useAgain)
 	if useAgain == 0 then line.special = 0 end
 	local leftside = line.side[1]
 	local texTop = leftside.toptexture
-    local texMid = leftside.midtexture
-    local texBot = leftside.bottomtexture
+	local texMid = leftside.midtexture
+	local texBot = leftside.bottomtexture
 	local soundname = "doom.sfx_swtchn"
 	if line.special == 11 then soundname = "doom.sfx_swtchx" end
-	for i = 0, #alphSwitchList*2 do
+	for i = 0, #alphSwitchList * 2 do
 		if switchlist[i] == texTop then
 			sound.Play(soundname, line.soundpos)
 			Map:ChangeWallTexture(leftside, top, switchlist[bit.bxor(i, 1)])
@@ -115,8 +113,8 @@ local UseSpecialLine_Type = {
 	[7] = function(line) if EV_BuildStairs(line,build8) then P_ChangeSwitchTexture(line,0) end end,
 	[9] = function(line) if EV_DoDonut(line) then P_ChangeSwitchTexture(line,0) end end,
 	[11] = function(line) P_ChangeSwitchTexture(line,0) G_ExitLevel() end,
-	[14] = function(line) if EV_DoPlat(line,raiseAndChange,32*HEIGHTCORRECTION) then P_ChangeSwitchTexture(line,0) end end,
-	[15] = function(line) if EV_DoPlat(line,raiseAndChange,24*HEIGHTCORRECTION) then P_ChangeSwitchTexture(line,0) end end,
+	[14] = function(line) if EV_DoPlat(line,raiseAndChange,32 * HEIGHTCORRECTION) then P_ChangeSwitchTexture(line,0) end end,
+	[15] = function(line) if EV_DoPlat(line,raiseAndChange,24 * HEIGHTCORRECTION) then P_ChangeSwitchTexture(line,0) end end,
 	[18] = function(line) if EV_DoFloor(line,raiseFloorToNearest) then P_ChangeSwitchTexture(line,0) end end,
 	[20] = function(line) if EV_DoPlat(line,raiseToNearestAndChange,0) then P_ChangeSwitchTexture(line,0) end end,
 	[21] = function(line) if EV_DoPlat(line,downWaitUpStay,0) then P_ChangeSwitchTexture(line,0) end end,
@@ -147,8 +145,8 @@ local UseSpecialLine_Type = {
 	[62] = function(line) if EV_DoPlat(line,downWaitUpStay,1) then P_ChangeSwitchTexture(line,1) end end,
 	[63] = function(line) if EV_DoDoor(line,normal) then P_ChangeSwitchTexture(line,1) end end,
 	[64] = function(line) if EV_DoFloor(line,raiseFloor) then P_ChangeSwitchTexture(line,1) end end,
-	[66] = function(line) if EV_DoPlat(line,raiseAndChange,24*HEIGHTCORRECTION) then P_ChangeSwitchTexture(line,1) end end,
-	[67] = function(line) if EV_DoPlat(line,raiseAndChange,32*HEIGHTCORRECTION) then P_ChangeSwitchTexture(line,1) end end,
+	[66] = function(line) if EV_DoPlat(line,raiseAndChange,24 * HEIGHTCORRECTION) then P_ChangeSwitchTexture(line,1) end end,
+	[67] = function(line) if EV_DoPlat(line,raiseAndChange,32 * HEIGHTCORRECTION) then P_ChangeSwitchTexture(line,1) end end,
 	[65] = function(line) if EV_DoFloor(line,raiseFloorCrush) then P_ChangeSwitchTexture(line,1) end end,
 	[68] = function(line) if EV_DoPlat(line,raiseToNearestAndChange,0) then P_ChangeSwitchTexture(line,1) end end,
 	[69] = function(line) if EV_DoFloor(line,raiseFloorToNearest) then P_ChangeSwitchTexture(line,1) end end,

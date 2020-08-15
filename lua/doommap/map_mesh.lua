@@ -5,13 +5,11 @@ local pairs = pairs
 local setmetatable = setmetatable
 local tobool = tobool
 
-local Material = Material
 local Vector = Vector
 
 local bit = bit
 local math = math
 local mesh = mesh
-local string = string
 local table = table
 
 setfenv( 1, DOOM )
@@ -19,7 +17,7 @@ setfenv( 1, DOOM )
 -- Default gmod function doesn't copy vectors
 local function TableCopy(t, lookup_table)
 	if (t == nil) then return nil end
-	
+
 	local copy = {}
 	setmetatable(copy, getmetatable(t))
 	for k,v in pairs(t) do
@@ -55,9 +53,9 @@ local function intercept_vertex(startv, endv, fdiv)
 	local den = (bx - ax) * (dy - cy) - (by - ay) * (dx - cx);
 
 	if (den == 0) then return false end;
-	
+
 	local r = num / den;
-	
+
 	local inter = {}
 	inter.x = ax + r * (bx - ax);
 	inter.y = ay + r * (by - ay);
@@ -67,7 +65,6 @@ end
 local function PolygonClip(input, clipper)
 	local out = {}
 	local workpoly = TableCopy(input);
-	local vert
 	for i = 1, #workpoly do
 		local side = (clipper.y - workpoly[i].y) * clipper.dx - (clipper.x - workpoly[i].x) * clipper.dy
 		if side > 0 then workpoly[i].side = 1 end
@@ -122,7 +119,7 @@ function BuildFlatVertexes(t, offset)
 		mesh.Normal(t.norm)
 		mesh.Color(255, 255, 255, 255)
 		mesh.TexCoord(0, v.x / 64, -v.y / 64)
-		mesh.TexCoord(1, lightx/256, lighty/256)
+		mesh.TexCoord(1, lightx / 256, lighty / 256)
 		mesh.AdvanceVertex()
 	end
 end
@@ -132,9 +129,9 @@ function BuildWallVertexes(wall, offset)
 	local lightsector = wall.s1
 	local lightx = ((lightsector.id - 1) % 256) + 0.5
 	local lighty = math.floor((lightsector.id - 1) / 256) + 0.5
-	
+
 	local startu, endu, startv, endv = 0, 1, 0, 1
-	
+
 	if wall.texture ~= "-" then
 		startu = wall.offsetx / wall.texwidth
 		endu = startu + wall.length / wall.texwidth
@@ -145,32 +142,32 @@ function BuildWallVertexes(wall, offset)
 			endv = 1 + wall.offsety / wall.texheight;
 			startv = endv - (wall.top - wall.bottom) / wall.texheight;
 		end
-		
+
 	end
-	
+
 	mesh.Position(Vector(wall.v1.x, wall.v1.y, wall.top) + offset)
 	mesh.Normal(wall.norm)
 	mesh.Color(255, 255, 255, 255)
 	mesh.TexCoord(0, startu, startv)
-	mesh.TexCoord(1, lightx/256, lighty/256)
+	mesh.TexCoord(1, lightx / 256, lighty / 256)
 	mesh.AdvanceVertex()
 	mesh.Position(Vector(wall.v2.x, wall.v2.y, wall.top) + offset)
 	mesh.Normal(wall.norm)
 	mesh.Color(255, 255, 255, 255)
 	mesh.TexCoord(0, endu, startv)
-	mesh.TexCoord(1, lightx/256, lighty/256)
+	mesh.TexCoord(1, lightx / 256, lighty / 256)
 	mesh.AdvanceVertex()
 	mesh.Position(Vector(wall.v2.x, wall.v2.y, wall.bottom) + offset)
 	mesh.Normal(wall.norm)
 	mesh.Color(255, 255, 255, 255)
 	mesh.TexCoord(0, endu, endv)
-	mesh.TexCoord(1, lightx/256, lighty/256)
+	mesh.TexCoord(1, lightx / 256, lighty / 256)
 	mesh.AdvanceVertex()
 	mesh.Position(Vector(wall.v1.x, wall.v1.y, wall.bottom) + offset)
 	mesh.Normal(wall.norm)
 	mesh.Color(255, 255, 255, 255)
 	mesh.TexCoord(0, startu, endv)
-	mesh.TexCoord(1, lightx/256, lighty/256)
+	mesh.TexCoord(1, lightx / 256, lighty / 256)
 	mesh.AdvanceVertex()
 end
 
@@ -188,7 +185,7 @@ function MAP:BuildWalls(line, side)
 		thisside = line.side[2]
 		otherside = line.side[1]
 	else
-		error("Invalid Side: "..tostring(side))
+		error("Invalid Side: " .. tostring(side))
 	end
 	local thissector = thisside.sector
 	local othersector = otherside and otherside.sector
@@ -264,7 +261,7 @@ function MAP:BuildWalls(line, side)
 		convex[2] = Vector(v1.x, v1.y, wall.bottom)
 		convex[3] = Vector(v2.x, v2.y, wall.top)
 		convex[4] = Vector(v2.x, v2.y, wall.bottom)
-		convex[5] = Vector((v1.x + v2.x)/2, (v1.y + v2.y)/2, wall.top) - wall.norm*4
+		convex[5] = Vector((v1.x + v2.x) / 2, (v1.y + v2.y) / 2, wall.top) - wall.norm * 4
 		convex[6] = Vector(convex[5].x, convex[5].y, wall.bottom)
 		local target = wall.top_pegged and self.CeilPhys or self.FloorPhys
 		table.insert(target[thissector.id], convex)
@@ -278,7 +275,7 @@ function MAP:ProcessNode(node, polygon)
 		local nextnode = node.children[i]
 		if tobool(bit.band(nextnode, NF_SUBSECTOR)) then
 			-- if we clip with segs, the floors will stay within their sectors, but we get more holes
-			local subsector = self.Subsectors[bit.bxor(nextnode, NF_SUBSECTOR)+1]
+			local subsector = self.Subsectors[bit.bxor(nextnode, NF_SUBSECTOR) + 1]
 			local polygon = clipped[i]
 			for i = 1, subsector.numsegs do
 				local seg = subsector.segs[i]
@@ -290,7 +287,7 @@ function MAP:ProcessNode(node, polygon)
 			end
 			subsector.polygon = polygon;
 		else
-			self:ProcessNode(self.Nodes[nextnode+1], clipped[i]);
+			self:ProcessNode(self.Nodes[nextnode + 1], clipped[i]);
 		end
 	end
 end
@@ -313,7 +310,7 @@ function MAP:CreateMeshes()
 	for i = 1, self.Sidedefs.n do
 		self.SideMeshes[i] = {}
 	end
-	
+
 	-- Generate wall data for linedefs
 	for i = 1, self.Linedefs.n do
 		local linedef = self.Linedefs[i]
@@ -331,23 +328,23 @@ function MAP:CreateMeshes()
 			convex[2] = Vector(v1.x, v1.y, low)
 			convex[3] = Vector(v2.x, v2.y, high)
 			convex[4] = Vector(v2.x, v2.y, low)
-			convex[5] = Vector((v1.x + v2.x)/2, (v1.y + v2.y)/2, high) + linedef.normal*2
+			convex[5] = Vector((v1.x + v2.x) / 2, (v1.y + v2.y) / 2, high) + linedef.normal * 2
 			convex[6] = Vector(convex[5].x, convex[5].y, low)
 			self.LinePhys[i] = convex
 		end
 	end
-	
+
 	local polygon = {}
 	polygon[1] = {x = self.Bounds.lower.x, y = self.Bounds.upper.y}
 	polygon[2] = {x = self.Bounds.upper.x, y = self.Bounds.upper.y}
 	polygon[3] = {x = self.Bounds.upper.x, y = self.Bounds.lower.y}
 	polygon[4] = {x = self.Bounds.lower.x, y = self.Bounds.lower.y}
-	
+
 	-- Traverse node tree and generate polygons for subsectors
 	self:ProcessNode(self.Nodes[self.Nodes.n], polygon)
-	
+
 	if CLIENT then
-		for i =1, self.Linedefs.n do
+		for i = 1, self.Linedefs.n do
 			local linedef = self.Linedefs[i]
 			local leftwalls = linedef.leftwalls
 			local rightwalls = linedef.rightwalls
@@ -376,7 +373,7 @@ function MAP:CreateMeshes()
 						if texture then w = texture.width h = texture.height end
 					end
 					wall.texwidth = w
-					wall.texheight = h*HEIGHTCORRECTION
+					wall.texheight = h * HEIGHTCORRECTION
 					wall.material = wall.flat and GetFlatMaterial(wall.texture) or GetTextureMaterial(wall.texture)
 					if wall.sky then wall.material = GetFlatMaterial("F_SKY1") end
 					if not wall.sky and wall.special then
@@ -411,7 +408,7 @@ function MAP:CreateMeshes()
 						if texture then w = texture.width h = texture.height end
 					end
 					wall.texwidth = w
-					wall.texheight = h*HEIGHTCORRECTION
+					wall.texheight = h * HEIGHTCORRECTION
 					wall.material = wall.flat and GetFlatMaterial(wall.texture) or GetTextureMaterial(wall.texture)
 					if wall.sky then wall.material = GetFlatMaterial("F_SKY1") end
 					if not wall.sky and wall.special then
@@ -426,7 +423,7 @@ function MAP:CreateMeshes()
 			end
 		end
 	end
-	
+
 	-- Create meshes and convexes for floor and ceiling from polygon
 	local fnormal = Vector(0, 0, 1)
 	local cnormal = Vector(0, 0, -1)
@@ -435,7 +432,7 @@ function MAP:CreateMeshes()
 		local poly = subsector.polygon
 		local sector = subsector.sector
 		local vertcount = #poly
-		
+
 		local bottom = sector.floorheight - (sector.maxfloor - FindLowestSurrounding(sector, "minfloor", sector.floorheight))
 		local top = sector.ceilingheight + (FindHighestSurrounding(sector, "maxceiling", sector.ceilingheight) - sector.minceiling)
 		if bottom == sector.floorheight then bottom = bottom - 8 end
@@ -452,9 +449,9 @@ function MAP:CreateMeshes()
 			table.insert(convex, Vector(poly[j].x, poly[j].y, top))
 		end
 		table.insert(self.CeilPhys[sector.id], convex)
-		
+
 		if SERVER then continue end
-		
+
 		local fmesh = {}
 		local cmesh = {}
 		fmesh.verts = {}
@@ -462,7 +459,7 @@ function MAP:CreateMeshes()
 		for j = 1, vertcount do
 			local v = poly[j]
 			fmesh.verts[j] = Vector(v.x, v.y, sector.floorheight)
-			cmesh.verts[vertcount-j+1] = Vector(v.x, v.y, sector.ceilingheight)
+			cmesh.verts[vertcount-j + 1] = Vector(v.x, v.y, sector.ceilingheight)
 		end
 		fmesh.norm = fnormal
 		cmesh.norm = cnormal

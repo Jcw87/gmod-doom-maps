@@ -1,14 +1,5 @@
 AddCSLuaFile()
 
--- Default gmod function iterates with pairs instead of ipairs or number indexes
-local function TableAdd(dest, source)
-    for i = 1, #source do
-        table.insert( dest, source[i] )
-    end
-    
-    return dest
-end
-
 DEFINE_BASECLASS( "base_anim" )
 
 ENT.RenderGroup = RENDERGROUP_OPAQUE
@@ -20,7 +11,7 @@ function ENT:SetupDataTables()
 end
 
 function ENT:Initialize()
-	
+
 end
 
 function ENT:Setup()
@@ -30,11 +21,11 @@ function ENT:Setup()
 	self.sector = self.Map.Sectors[sectorid]
 	if not self.sector then return end
 	local bounds = self.sector.bounds
-	self.offset = Vector((bounds.lower.x+bounds.upper.x)/2, (bounds.lower.y+bounds.upper.y)/2, floor and self.sector.floorheight or self.sector.ceilingheight)
-	if SERVER then 
+	self.offset = Vector((bounds.lower.x + bounds.upper.x) / 2, (bounds.lower.y + bounds.upper.y) / 2, floor and self.sector.floorheight or self.sector.ceilingheight)
+	if SERVER then
 		local tr = {start = Vector(0, 0, 0), endpos = Vector(0, 0, 0), mins = bounds.lower, maxs = bounds.upper, mask = MASK_SOLID_BRUSHONLY}
 		tr = util.TraceHull(tr)
-		if tr.Hit then print("doom_sector removed as it might intersect with "..tostring(tr.Entity)) self:Remove() return end
+		if tr.Hit then print("doom_sector removed as it might intersect with " .. tostring(tr.Entity)) self:Remove() return end
 	end
 	self.phys = floor and self.Map.FloorPhys[sectorid] or self.Map.CeilPhys[sectorid]
 	self:OffsetPhys()
@@ -44,7 +35,7 @@ function ENT:Setup()
 	self:PhysicsInitMultiConvex(self.phys, false)
 	self:EnableCustomCollisions()
 	self:MakePhysicsObjectAShadow()
-	
+
 	if SERVER then
 		self:SetMoveType(MOVETYPE_NOCLIP) -- Without this, move speeds get messed up
 		self:SetMoveType(MOVETYPE_PUSH)
@@ -72,8 +63,8 @@ function ENT:Setup()
 				DOOM.AddBoundsZ(bbox, submesh.bottom)
 			end
 		end
-		bbox.lower.z = math.min(bbox.lower.z, (DOOM.FindLowestSurrounding(self.sector, "minfloor") - self.sector.maxfloor), self.sector.minfloor)
-		bbox.upper.z = math.max(bbox.upper.z, (DOOM.FindHighestSurrounding(self.sector, "maxceiling") - self.sector.minceiling), self.sector.maxceiling)
+		bbox.lower.z = math.min(bbox.lower.z, DOOM.FindLowestSurrounding(self.sector, "minfloor") - self.sector.maxfloor, self.sector.minfloor)
+		bbox.upper.z = math.max(bbox.upper.z, DOOM.FindHighestSurrounding(self.sector, "maxceiling") - self.sector.minceiling, self.sector.maxceiling)
 		self:SetRenderBounds(bbox.lower - self.offset, bbox.upper - self.offset)
 		self.matrix = Matrix()
 
@@ -129,7 +120,7 @@ function ENT:OnTakeDamage(dmg)
 		if math.abs(cross) > 8 then continue end
 		local dot = (hitpos.x - v1.x) * (v2.x - v1.x) + (hitpos.y - v1.y) * (v2.y - v1.y)
 		if dot < 0 then continue end
-		local slength = (v2.x - v1.x)^2 + (v2.y - v1.y)^2
+		local slength = (v2.x - v1.x) ^ 2 + (v2.y - v1.y) ^ 2
 		if dot > slength then continue end
 		DOOM.P_ShootSpecialLine(dmg:GetAttacker(), line)
 	end
@@ -137,7 +128,7 @@ end
 
 function ENT:Think()
 	self:SetCollisionGroup(COLLISION_GROUP_NONE) -- This guy doesn't want to stay, so I'm FORCING it
-	self:NextThink(CurTime()+0.01)
+	self:NextThink(CurTime() + 0.01)
 	return true
 end
 
@@ -170,8 +161,6 @@ function ENT:Think()
 	end
 end
 
-local color = Vector(0, 0, 0)
-
 local function DrawWall(wall)
 	if wall.s2 then
 		if wall.texid == 0 then
@@ -196,7 +185,7 @@ local function DrawWall(wall)
 		wall.top = wall.s1.ceilingheight
 		wall.bottom = wall.s1.floorheight
 	end
-	
+
 	render.SetMaterial(wall.material)
 	mesh.Begin(MATERIAL_QUADS, 1)
 	DOOM.BuildWallVertexes(wall)

@@ -23,7 +23,6 @@ local string = string
 local table = table
 local timer = timer
 local util = util
-local wad = wad
 
 setfenv( 1, DOOM )
 
@@ -189,16 +188,16 @@ function ReadBlockmap(s)
 	self.bmapwidth = s:ReadSInt16LE()
 	self.bmapheight = s:ReadSInt16LE()
 	local offsets = {}
-	for i = 1, ((self.bmapwidth)*(self.bmapheight)) do
+	for i = 1, (self.bmapwidth * self.bmapheight) do
 		offsets[i] = s:ReadUInt16LE()
 	end
 	for i = 1, #offsets do
 		local lines = {}
-		s:Seek(offsets[i]*2)
+		s:Seek(offsets[i] * 2)
 		local start0 = s:ReadSInt16LE() -- discard starting 0
-		if start0 != 0 then error("Blockmap invalid!") end
+		if start0 ~= 0 then error("Blockmap invalid!") end
 		local linenum = s:ReadSInt16LE()
-		local currentoffset = offsets[i]*2 + 2
+		local currentoffset = offsets[i] * 2 + 2
 		while linenum ~= -1 do
 			if currentoffset > size then error("Blockmap invalid!") end
 			table.insert(lines, linenum)
@@ -231,7 +230,7 @@ function MAP:SetupSidedefs()
 	for i = 1, self.Sidedefs.n do
 		local sidedef = self.Sidedefs[i]
 		sidedef.id = i
-		sidedef.sector = self.Sectors[sidedef.sectornum+1]
+		sidedef.sector = self.Sectors[sidedef.sectornum + 1]
 	end
 end
 
@@ -239,8 +238,8 @@ function MAP:SetupLinedefs()
 	for i = 1, self.Linedefs.n do
 		local linedef = self.Linedefs[i]
 		linedef.id = i
-		linedef.v1 = self.Vertexes[linedef.v1num+1]
-		linedef.v2 = self.Vertexes[linedef.v2num+1]
+		linedef.v1 = self.Vertexes[linedef.v1num + 1]
+		linedef.v2 = self.Vertexes[linedef.v2num + 1]
 		linedef.dx = linedef.v2.x - linedef.v1.x
 		linedef.dy = linedef.v2.y - linedef.v1.y
 		if linedef.dx == 0 then
@@ -257,16 +256,16 @@ function MAP:SetupLinedefs()
 		linedef.bbox.top = math.max(linedef.v1.y, linedef.v2.y)
 		linedef.side = {}
 		local sidenum = linedef.sidenum[1]
-		linedef.side[1] = (sidenum ~= 65535) and self.Sidedefs[sidenum+1] or nil
+		linedef.side[1] = (sidenum ~= 65535) and self.Sidedefs[sidenum + 1] or nil
 		sidenum = linedef.sidenum[2]
-		linedef.side[2] = (sidenum ~= 65535) and self.Sidedefs[sidenum+1] or nil
+		linedef.side[2] = (sidenum ~= 65535) and self.Sidedefs[sidenum + 1] or nil
 		if linedef.side[1] then linedef.frontsector = linedef.side[1].sector end
 		if linedef.side[2] then linedef.backsector = linedef.side[2].sector end
 		if linedef.frontsector then table.insert(linedef.frontsector.lines, linedef) end
 		if linedef.backsector then table.insert(linedef.backsector.lines, linedef) end
 		linedef.normal = Vector(linedef.v2.y - linedef.v1.y, -(linedef.v2.x - linedef.v1.x), 0):GetNormalized()
-		linedef.length = math.sqrt((linedef.v2.x - linedef.v1.x)^2 + (linedef.v2.y - linedef.v1.y)^2)
-		linedef.soundpos = Vector(linedef.v1.x + linedef.dx/2, linedef.v1.y + linedef.dy/2, linedef.frontsector.floorheight)
+		linedef.length = math.sqrt((linedef.v2.x - linedef.v1.x) ^ 2 + (linedef.v2.y - linedef.v1.y) ^ 2)
+		linedef.soundpos = Vector(linedef.v1.x + linedef.dx / 2, linedef.v1.y + linedef.dy / 2, linedef.frontsector.floorheight)
 	end
 end
 
@@ -285,14 +284,14 @@ function MAP:SetupSegs()
 		seg.id = i
 		if type(seg.v1) ~= "number" then print(i) end -- checking the type seems to prevent LuaJIT from screwing up
 		if type(seg.v2) ~= "number" then print(i) end
-		seg.v1 = self.Vertexes[seg.v1+1]
-		seg.v2 = self.Vertexes[seg.v2+1]
-		seg.linedef = self.Linedefs[seg.linedefnum+1]
+		seg.v1 = self.Vertexes[seg.v1 + 1]
+		seg.v2 = self.Vertexes[seg.v2 + 1]
+		seg.linedef = self.Linedefs[seg.linedefnum + 1]
 		local sidenum = seg.sidenum
-		seg.side = seg.linedef.side[sidenum+1]
+		seg.side = seg.linedef.side[sidenum + 1]
 		seg.frontsector = seg.side.sector
-		if tobool(bit.band(seg.linedef.flags, ML_TWOSIDED)) then seg.backsector = seg.linedef.side[bit.bxor(sidenum,1)+1].sector end
-		
+		if tobool(bit.band(seg.linedef.flags, ML_TWOSIDED)) then seg.backsector = seg.linedef.side[bit.bxor(sidenum,1) + 1].sector end
+
 		-- 'slime trails' fix
 		local line = seg.linedef
 		if line.dx == 0 or line.dy == 0 then continue end
@@ -323,7 +322,7 @@ function MAP:SetupBlockmap()
 	for i = 1, #self.Blockmap do
 		local lines = self.Blockmap[i]
 		for j = 1, #lines do
-			lines[j] = self.Linedefs[lines[j]+1]
+			lines[j] = self.Linedefs[lines[j] + 1]
 		end
 	end
 end
@@ -352,11 +351,11 @@ function MAP:SetupThings()
 		if not tobool(bit.band(thing.options, skillbit)) then continue end
 		local mobj = P_SpawnMobj(pos, GetMobjInfoIndexByDoomEdNum(thing.type))
 		mobj:SetYaw(angle)
-		if mobj:HasFlag(MF_SPAWNCEILING) then pos.z = subsector.sector.ceilingheight - 1 - mobj.height*HEIGHTCORRECTION mobj:SetPos(pos) end
+		if mobj:HasFlag(MF_SPAWNCEILING) then pos.z = subsector.sector.ceilingheight - 1 - mobj.height * HEIGHTCORRECTION mobj:SetPos(pos) end
 		if not game.SinglePlayer() and mobj:HasFlag(MF_SPECIAL) then mobj:SetUsingMPPickupRules(true) end
 		if tobool(bit.band(thing.options, MTF_AMBUSH)) then mobj:AddFlag(MF_AMBUSH) end
 		P_CheckPosition(ToEntity(mobj), pos.x, pos.y)
-		if tmfloorz > pos.z then pos.z = tmfloorz+0.5 mobj:SetPos(pos) end
+		if tmfloorz > pos.z then pos.z = tmfloorz + 0.5 mobj:SetPos(pos) end
 		mobj:Spawn()
 		self.Things[i] = mobj
 	end
@@ -410,7 +409,7 @@ function MAP:Setup()
 
 	self:SetupBounds()
 	self:CreateMeshes()
-	
+
 	if CLIENT then
 		for i = 1, self.Sectors.n do
 			UpdateSectorLight(self.Sectors[i])
@@ -463,23 +462,23 @@ function MAP:Spawn()
 	P_SpawnSpecials()
 	self:SetupThings()
 	self.spawned = true
-	timer.Destroy("DOOM.LoadMap")
+	timer.Remove("DOOM.LoadMap")
 end
 
 function MAP:PointInSubsector(x, y)
 	if self.Nodes.n == 0 then return self.Subsectors[1] end
 	local nodeid = self.Nodes.n - 1
 	while not tobool(bit.band(nodeid, NF_SUBSECTOR)) do
-		local node = self.Nodes[nodeid+1]
+		local node = self.Nodes[nodeid + 1]
 		local side
 		if SERVER then
 			side = P_PointOnDivlineSide(x, y, node)
 		else
 			side = R_PointOnSide(x, y, node)
 		end
-		nodeid = node.children[side+1]
+		nodeid = node.children[side + 1]
 	end
-	return self.Subsectors[bit.bxor(nodeid, NF_SUBSECTOR)+1]
+	return self.Subsectors[bit.bxor(nodeid, NF_SUBSECTOR) + 1]
 end
 
 local function MatchNextNamed(wad, pattern)
@@ -543,14 +542,14 @@ function LoadMap(wadname, mapname)
 	self.Nodes = ReadNodes(wad:GetLumpByNum(lumpnum + ML_NODES):ReadStream())
 	self.Sectors = ReadSectors(wad:GetLumpByNum(lumpnum + ML_SECTORS):ReadStream())
 	self.Blockmap = ReadBlockmap(wad:GetLumpByNum(lumpnum + ML_BLOCKMAP):ReadStream())
-	
+
 	self:Setup()
 	self:SetupBlockmap()
 	self:SetupNet(wad)
 	wad:Close()
-	
+
 	Map = self
-	
+
 	if SERVER then
 		local co = coroutine.wrap(self.Spawn)
 		co(self)
@@ -570,7 +569,7 @@ function UnloadMap()
 	for k, v in pairs(ents.GetAll()) do
 		if removeclasses[v:GetClass()] then v:Remove() end
 	end
-	
+
 	if Map then
 		for k, v in pairs(GetAllMobjInstances()) do
 			local ent = ToEntity(v)
@@ -581,10 +580,10 @@ function UnloadMap()
 			ent:Remove()
 		end
 	end
-	
+
 	Map = nil
-	timer.Destroy("DOOM.LoadMap")
-	timer.Destroy("DOOM.SpawnPlayers")
+	timer.Remove("DOOM.LoadMap")
+	timer.Remove("DOOM.SpawnPlayers")
 	net.Start("DOOM.UnloadMap")
 	net.Broadcast()
 end
@@ -597,7 +596,7 @@ function FindPlayerStart()
 	for i = 1, #playerstarts do
 		local start = playerstarts[i]
 		local pos = start:GetPos()
-		local tr = {start = pos, endpos = pos, mins = Vector(-16+0.1, -16+0.1, 0.1), maxs = Vector(16-0.1, 16-0.1, 56*HEIGHTCORRECTION-0.1), mask = MASK_PLAYERSOLID}
+		local tr = {start = pos, endpos = pos, mins = Vector(-16 + 0.1, -16 + 0.1, 0.1), maxs = Vector(16-0.1, 16-0.1, 56 * HEIGHTCORRECTION-0.1), mask = MASK_PLAYERSOLID}
 		tr = util.TraceHull(tr)
 		if not tr.Hit then return start end
 	end
@@ -607,7 +606,7 @@ function SpawnPlayer(ply)
 	-- Players might disconnect between maps
 	if not ply:IsValid() then return end
 	local start = FindPlayerStart()
-	if not start then 
+	if not start then
 		--timer.Simple(1, function() SpawnPlayer(ply) end)
 		return
 	end
@@ -616,10 +615,9 @@ function SpawnPlayer(ply)
 	local info = GetPlayerInfo(ply)
 	info:ResetCards()
 	local powers = GetPlayerPowers(ply)
-	for i=0, NUMPOWERS-1, 1 do
+	for i = 0, NUMPOWERS-1, 1 do
 		powers:Deactivate( i )
 	end
-	
 end
 
 function G_SecretExitLevel()
@@ -671,13 +669,13 @@ function G_ExitLevel(secret)
 	local mapname = GetMapName(Map.gamemode, episode, map)
 	timer.Simple(1, UnloadMap)
 	timer.Simple(1.2, function()
-		LoadMap(wadname, mapname) 
+		LoadMap(wadname, mapname)
 		timer.Create("DOOM.SpawnPlayers", 1, 0, function()
 			if not Map or not Map.spawned then return end
 			for k, v in pairs(players) do
 				SpawnPlayer(v)
 			end
-			timer.Destroy("DOOM.SpawnPlayers")
+			timer.Remove("DOOM.SpawnPlayers")
 		end)
 	end)
 end

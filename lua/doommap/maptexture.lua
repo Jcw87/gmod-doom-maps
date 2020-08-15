@@ -1,6 +1,5 @@
 AddCSLuaFile()
 
-local concommand = concommand
 local error = error
 local pairs = pairs
 local pcall = pcall
@@ -12,18 +11,15 @@ local GetRenderTargetEx = GetRenderTargetEx
 local Material = Material
 local ScrH = ScrH
 local ScrW = ScrW
-local SysTime = SysTime
 
 local bit = bit
 local cam = cam
-local engine = engine
 local hook = hook
 local math = math
 local render = render
 local string = string
 local surface = surface
 local table = table
-local wad = wad
 
 local MATERIAL_RT_DEPTH_NONE = MATERIAL_RT_DEPTH_NONE
 local MATERIAL_RT_DEPTH_SEPARATE = MATERIAL_RT_DEPTH_SEPARATE
@@ -34,8 +30,6 @@ local RT_SIZE_OFFSCREEN = RT_SIZE_OFFSCREEN
 
 local IMAGE_FORMAT_RGB888 = IMAGE_FORMAT_RGB888
 local IMAGE_FORMAT_RGBA8888 = IMAGE_FORMAT_RGBA8888
-
-local bWindows = system.IsWindows()
 
 setfenv( 1, DOOM )
 
@@ -100,7 +94,7 @@ local function SetupTextures(pnames, textures)
 		local maptexture = textures[i]
 		for j = 1, #maptexture.patches do
 			local patch = maptexture.patches[j]
-			patch.name = pnames[patch.num+1]
+			patch.name = pnames[patch.num + 1]
 		end
 		if CLIENT then maptexture:AllocateTexture() end
 	end
@@ -116,7 +110,7 @@ function LoadTextureLumps(wad)
 	local lump = wad:GetLumpByName("PNAMES")
 	if not lump then return end
 	local pnames = ReadPnames(lump:ReadStream())
-	
+
 	-- TEXTURES
 	local textures = {}
 	lump = wad:GetLumpByName("TEXTURE1")
@@ -128,7 +122,6 @@ function LoadTextureLumps(wad)
 	SetupTextures(pnames, textures)
 	for i = 1, #textures do
 		local maptexture = textures[i]
-		local name = maptexture.name
 		table.insert(tTextures, maptexture)
 	end
 end
@@ -160,10 +153,6 @@ function LoadTextures()
 end
 
 if CLIENT then
-
-local function InDirectX80() -- I have no idea what render.GetDXLevel() returns on OSX.
-	return ( bWindows and ( render.GetDXLevel() < 90 ) )
-end
 
 local function NextPowerOfTwo( i )
 	local val = 1
@@ -268,7 +257,7 @@ local tFlatMaterials = {F_SKY1 = Material("doom/floors/f_sky1")}
 
 function GetFlatMaterial(name)
 	if tFlatMaterials[name] then return tFlatMaterials[name] end
-	local material = CreateMaterial("doom/flats/"..name, "LightmappedGeneric", {["$basetexture"] = "shadertest/BaseTexture"})
+	local material = CreateMaterial("doom/flats/" .. name, "LightmappedGeneric", {["$basetexture"] = "shadertest/BaseTexture"})
 	material:SetTexture("$basetexture", GetFlatTexture(name))
 	tFlatMaterials[name] = material
 	return material
@@ -278,7 +267,7 @@ local tTextureMaterials = {}
 
 function GetTextureMaterial(name)
 	if tTextureMaterials[name] then return tTextureMaterials[name] end
-	local material = CreateMaterial("doom/textures/"..name, "LightmappedGeneric", {["$basetexture"] = "shadertest/BaseTexture", ["$alphatest"] = "1"})
+	local material = CreateMaterial("doom/textures/" .. name, "LightmappedGeneric", {["$basetexture"] = "shadertest/BaseTexture", ["$alphatest"] = "1"})
 	material:SetTexture("$basetexture", GetMapTexture(name).texture)
 	tTextureMaterials[name] = material
 	return material
@@ -293,10 +282,10 @@ function MAPTEXTURE:Draw()
 		surface.SetDrawColor(255, 255, 255, 255)
 		PatchMaterial:SetTexture("$basetexture", patch.texture)
 		surface.SetMaterial(PatchMaterial)
-		local x = math.Round(mappatch.originx*self.ScaleX)
-		local y = math.Round(mappatch.originy*self.ScaleY)
-		local w = math.Round((patch.realwidth or patch.width)*self.ScaleX)
-		local h = math.Round((patch.realheight or patch.height)*self.ScaleY)
+		local x = math.Round(mappatch.originx * self.ScaleX)
+		local y = math.Round(mappatch.originy * self.ScaleY)
+		local w = math.Round((patch.realwidth or patch.width) * self.ScaleX)
+		local h = math.Round((patch.realheight or patch.height) * self.ScaleY)
 		DrawTexturedRect(x, y, w, h)
 	end
 end
@@ -305,8 +294,8 @@ function MAPTEXTURE:AllocateTexture()
 	local pow2width, pow2height
 	pow2width = NextPowerOfTwo(self.width)
 	pow2height = NextPowerOfTwo(self.height)
-	
-	local texname = "doom/textures/"..string.lower(self.name)
+
+	local texname = "doom/textures/" .. string.lower(self.name)
 	local iFormat = IMAGE_FORMAT_RGBA8888
 	local iDepthType = MATERIAL_RT_DEPTH_SEPARATE
 	self.texture = GetRenderTargetEx( texname, pow2width, pow2height, RT_SIZE_NO_CHANGE, iDepthType, iTexFlags, 0, iFormat )
@@ -314,11 +303,11 @@ end
 
 function MAPTEXTURE:WriteToTexture()
 	local oldW, oldH = ScrW(), ScrH()
-	self.ScaleX = self.texture:Width()/self.width
-	self.ScaleY = self.texture:Height()/self.height
+	self.ScaleX = self.texture:Width() / self.width
+	self.ScaleY = self.texture:Height() / self.height
 	render.PushRenderTarget( self.texture )
 	render.SetViewPort( 0, 0, self.texture:Width(), self.texture:Height() )
-	
+
 	render.OverrideAlphaWriteEnable(true, true)
 	render.Clear( 0, 0, 0, 0, true, true )
 
@@ -329,9 +318,9 @@ function MAPTEXTURE:WriteToTexture()
 	local status, msg = pcall( self.Draw, self )
 	cam.End2D()
 	render.PopFilterMin()
-	
+
 	render.OverrideAlphaWriteEnable(false)
-	
+
 	render.PopRenderTarget()
 	render.SetViewPort( 0, 0, oldW, oldH )
 	if not status then error(msg) end
@@ -371,7 +360,7 @@ local animdefs = {
 	{istexture = false, endname = "BLOOD3", startname = "BLOOD1", speed = 8},
 
 	-- DOOM II flat animations.
-	{istexture = false, endname = "RROCK08", startname = "RROCK05", speed = 8},		
+	{istexture = false, endname = "RROCK08", startname = "RROCK05", speed = 8},
 	{istexture = false, endname = "SLIME04", startname = "SLIME01", speed = 8},
 	{istexture = false, endname = "SLIME08", startname = "SLIME05", speed = 8},
 	{istexture = false, endname = "SLIME12", startname = "SLIME09", speed = 8},

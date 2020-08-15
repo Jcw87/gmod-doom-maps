@@ -134,11 +134,11 @@ end
 function FindHighestSurrounding(sector, name, height)
 	local line, other
 	height = height or -32768
-	
+
 	for i = 1, #sector.lines do
 		line = sector.lines[i]
 		other = getNextSector(line, sector)
-		
+
 		if not other then continue end
 		height = math.max(height, other[name])
 	end
@@ -148,11 +148,11 @@ end
 function FindLowestSurrounding(sector, name, height)
 	local line, other
 	height = height or 32767
-	
+
 	for i = 1, #sector.lines do
 		line = sector.lines[i]
 		other = getNextSector(line, sector)
-		
+
 		if not other then continue end
 		height = math.min(height, other[name])
 	end
@@ -255,7 +255,7 @@ Specials_Plat[blazeDWUS] = Specials_Plat[downWaitUpStay]
 local function UpdateSectorPlat(sector, type)
 	local height1, height2 = Specials_Plat[type](sector)
 	height2 = height2 or height1
-	if sector.maxfloor < math.max(height1, height2)then
+	if sector.maxfloor < math.max(height1, height2) then
 		sector.maxfloor = math.max(height1, height2)
 		sector.floormoves = true
 		sectorschanged = true
@@ -270,7 +270,7 @@ end
 function MAP:FindSectorFromLineTag(line)
 	start = 0
 	return function()
-		for i = start+1, self.Sectors.n do
+		for i = start + 1, self.Sectors.n do
 			start = i
 			if self.Sectors[i].tag == line.tag then return i end
 		end
@@ -305,7 +305,7 @@ function MAP:LinedefSpecials()
 				end
 			end
 		elseif special.plat then
-			for secnum in self:FindSectorFromLineTag(line) do 
+			for secnum in self:FindSectorFromLineTag(line) do
 				UpdateSectorPlat(self.Sectors[secnum], special.type)
 			end
 		end
@@ -313,7 +313,7 @@ function MAP:LinedefSpecials()
 	-- hacky special case shit
 	for i = 1, self.Sectors.n do
 		local sector = self.Sectors[i]
-		if sector.tag == 666 then 
+		if sector.tag == 666 then
 			if self.gamemode ~= commercial and self.gameepisode == 4 and self.gamemap == 6 then
 				UpdateSectorDoor(sector, blazeOpen)
 			else

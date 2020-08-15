@@ -93,7 +93,6 @@ CreateClientConVar("doom_map_mapname", "", false, true)
 CreateClientConVar("doom_map_skill", 0, true, true)
 
 local WadList
-local EpisodeList
 local MapList
 
 local function LoadMapCPanel(CPanel)
@@ -116,7 +115,7 @@ local function LoadMapCPanel(CPanel)
 		self:ConVarChanged(index-1)
 	end
 	function SkillList:SetValue(val)
-		self:ChooseOptionID(val+1)
+		self:ChooseOptionID(val + 1)
 	end
 	SkillList:SetSortItems(false)
 	SkillList:AddChoice("I'm too young to die", nil, true)
@@ -124,7 +123,7 @@ local function LoadMapCPanel(CPanel)
 	SkillList:AddChoice("Hurt me plenty")
 	SkillList:AddChoice("Ultra-Violence")
 	SkillList:AddChoice("Nightmare!")
-	local LoadButton = CPanel:Button("Load", "doom_map_load")
+	CPanel:Button("Load", "doom_map_load")
 end
 
 net.Receive("DOOM.WadList", function(bits)

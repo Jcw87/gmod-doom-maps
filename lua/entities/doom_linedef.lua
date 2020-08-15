@@ -19,12 +19,12 @@ function ENT:Setup()
 	if not self.linedef then return end
 	self.leftside = self.linedef.side[1]
 	local v1, v2 = self.linedef.v1, self.linedef.v2
-	self.offset = Vector((v1.x + v2.x)/2, (v1.y + v2.y)/2, self.leftside.sector.floorheight)
-	
+	self.offset = Vector((v1.x + v2.x) / 2, (v1.y + v2.y) / 2, self.leftside.sector.floorheight)
+
 	if tobool(bit.band(self.linedef.flags, DOOM.ML_TWOSIDED)) and tobool(bit.band(self.linedef.flags, DOOM.ML_BLOCKING)) then
 		self.phys = self.Map.LinePhys[lineid]
 		self:OffsetPhys()
-	
+
 		self:SetModel("models/props_c17/fence01a.mdl")
 		self:PhysicsInit(SOLID_VPHYSICS)
 		self:PhysicsInitConvex(self.phys, false)
@@ -37,11 +37,11 @@ function ENT:Setup()
 	else
 		self:SetNotSolid(true)
 	end
-	
+
 	self:SetMoveType(MOVETYPE_NOCLIP)
 	if SERVER then
 		self:SetPos(self.offset)
-		self:SetTrigger(true) 
+		self:SetTrigger(true)
 		self:SetNoDraw(true)
 	end
 end

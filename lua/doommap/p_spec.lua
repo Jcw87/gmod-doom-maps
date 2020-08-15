@@ -9,15 +9,13 @@ include("p_telept.lua")
 
 local tobool = tobool
 
-local Vector = Vector
-
 local bit = bit
 local math = math
 
 setfenv( 1, DOOM )
 
 function S_StartSound( ent, name )
-	local sound = "DOOM."..name
+	local sound = "DOOM." .. name
 	if ( ent.LastSound ) then
 		ent:StopSound( ent.LastSound )
 	end
@@ -38,7 +36,7 @@ function P_FindLowestFloorSurrounding(sec)
 	for i = 1, #sec.lines do
 		check = sec.lines[i]
 		other = getNextSector(check, sec)
-		
+
 		if not other then continue end
 		if other.floorheight < floor then floor = other.floorheight end
 	end
@@ -63,12 +61,12 @@ function P_FindNextHighestFloor(sec, currentheight)
 	local check, other
 	local height = currentheight
 	local heightlist = {}
-	
+
 	local h = 1
 	for i = 1, #sec.lines do
 		check = sec.lines[i]
 		other = getNextSector(check, sec)
-		
+
 		if not other then continue end
 		if other.floorheight > height then
 			heightlist[h] = other.floorheight
@@ -76,7 +74,7 @@ function P_FindNextHighestFloor(sec, currentheight)
 		end
 	end
 	if h == 1 then return currentheight end
-	
+
 	local min = heightlist[1]
 	for i = 2, #heightlist do
 		if heightlist[i] < min then min = heightlist[i] end
@@ -95,7 +93,7 @@ function P_FindLowestCeilingSurrounding(sec)
 		if not other then continue end
 		if other.ceilingheight < height then height = other.ceilingheight end
 	end
-    return height;
+	return height;
 end
 
 function P_FindHighestCeilingSurrounding(sec)
@@ -109,14 +107,14 @@ function P_FindHighestCeilingSurrounding(sec)
 		if not other then continue end
 		if other.ceilingheight > height then height = other.ceilingheight end
 	end
-    return height;
+	return height;
 end
 
 -- changed this function so that it can be used in a generic for loop
 function P_FindSectorFromLineTag(line)
 	local start = 0
 	return function()
-		for i = start+1, Map.Sectors.n do
+		for i = start + 1, Map.Sectors.n do
 			start = i
 			if Map.Sectors[i].tag == line.tag then return i end
 		end
@@ -171,62 +169,62 @@ local CrossSpecialLine_Action = {
 	[25] = function(line,side,thing) EV_DoCeiling(line,crushAndRaise) line.special = 0 end,
 	[30] = function(line,side,thing) EV_DoFloor(line,raiseToTexture) line.special = 0 end,
 	[35] = function(line,side,thing) EV_LightTurnOn(line,35) line.special = 0 end,
-    [36] = function(line,side,thing) EV_DoFloor(line,turboLower) line.special = 0 end,
+	[36] = function(line,side,thing) EV_DoFloor(line,turboLower) line.special = 0 end,
 	[37] = function(line,side,thing) EV_DoFloor(line,lowerAndChange) line.special = 0 end,
 	[38] = function(line,side,thing) EV_DoFloor(line,lowerFloorToLowest) line.special = 0 end,
 	[39] = function(line,side,thing) EV_Teleport(line,side,thing) line.special = 0 end,
-    [40] = function(line,side,thing) EV_DoCeiling(line,raiseToHighest) EV_DoFloor( line, lowerFloorToLowest ) line.special = 0 end,
-    [44] = function(line,side,thing) EV_DoCeiling(line,lowerAndCrush) line.special = 0 end,
-    [52] = function(line,side,thing) G_ExitLevel() end,
-    [53] = function(line,side,thing) EV_DoPlat(line,perpetualRaise,0) line.special = 0 end,
-    [54] = function(line,side,thing) EV_StopPlat(line) line.special = 0 end,
-    [56] = function(line,side,thing) EV_DoFloor(line,raiseFloorCrush) line.special = 0 end,
-    [57] = function(line,side,thing) EV_CeilingCrushStop(line) line.special = 0 end,
-    [58] = function(line,side,thing) EV_DoFloor(line,raiseFloor24) line.special = 0 end,
-    [59] = function(line,side,thing) EV_DoFloor(line,raiseFloor24AndChange) line.special = 0 end,
-    [104] = function(line,side,thing) EV_TurnTagLightsOff(line) line.special = 0 end,
-    [108] = function(line,side,thing) EV_DoDoor (line,blazeRaise) line.special = 0 end,
-    [109] = function(line,side,thing) EV_DoDoor (line,blazeOpen) line.special = 0 end,
-    [100] = function(line,side,thing) EV_BuildStairs(line,turbo16) line.special = 0 end,
-    [110] = function(line,side,thing) EV_DoDoor (line,blazeClose) line.special = 0 end,
-    [119] = function(line,side,thing) EV_DoFloor(line,raiseFloorToNearest) line.special = 0 end,
-    [121] = function(line,side,thing) EV_DoPlat(line,blazeDWUS,0) line.special = 0 end,
-    [124] = function(line,side,thing) G_SecretExitLevel() end,
-    [125] = function(line,side,thing) if not thing:IsPlayer() then EV_Teleport(line,side,thing) line.special = 0 end end,
-    [130] = function(line,side,thing) EV_DoFloor(line,raiseFloorTurbo) line.special = 0 end,
-    [141] = function(line,side,thing) EV_DoCeiling(line,silentCrushAndRaise) line.special = 0 end,
+	[40] = function(line,side,thing) EV_DoCeiling(line,raiseToHighest) EV_DoFloor( line, lowerFloorToLowest ) line.special = 0 end,
+	[44] = function(line,side,thing) EV_DoCeiling(line,lowerAndCrush) line.special = 0 end,
+	[52] = function(line,side,thing) G_ExitLevel() end,
+	[53] = function(line,side,thing) EV_DoPlat(line,perpetualRaise,0) line.special = 0 end,
+	[54] = function(line,side,thing) EV_StopPlat(line) line.special = 0 end,
+	[56] = function(line,side,thing) EV_DoFloor(line,raiseFloorCrush) line.special = 0 end,
+	[57] = function(line,side,thing) EV_CeilingCrushStop(line) line.special = 0 end,
+	[58] = function(line,side,thing) EV_DoFloor(line,raiseFloor24) line.special = 0 end,
+	[59] = function(line,side,thing) EV_DoFloor(line,raiseFloor24AndChange) line.special = 0 end,
+	[104] = function(line,side,thing) EV_TurnTagLightsOff(line) line.special = 0 end,
+	[108] = function(line,side,thing) EV_DoDoor (line,blazeRaise) line.special = 0 end,
+	[109] = function(line,side,thing) EV_DoDoor (line,blazeOpen) line.special = 0 end,
+	[100] = function(line,side,thing) EV_BuildStairs(line,turbo16) line.special = 0 end,
+	[110] = function(line,side,thing) EV_DoDoor (line,blazeClose) line.special = 0 end,
+	[119] = function(line,side,thing) EV_DoFloor(line,raiseFloorToNearest) line.special = 0 end,
+	[121] = function(line,side,thing) EV_DoPlat(line,blazeDWUS,0) line.special = 0 end,
+	[124] = function(line,side,thing) G_SecretExitLevel() end,
+	[125] = function(line,side,thing) if not thing:IsPlayer() then EV_Teleport(line,side,thing) line.special = 0 end end,
+	[130] = function(line,side,thing) EV_DoFloor(line,raiseFloorTurbo) line.special = 0 end,
+	[141] = function(line,side,thing) EV_DoCeiling(line,silentCrushAndRaise) line.special = 0 end,
 	[72] = function(line,side,thing) EV_DoCeiling(line,lowerAndCrush) end,
-    [73] = function(line,side,thing) EV_DoCeiling(line,crushAndRaise) end,
-    [74] = function(line,side,thing) EV_CeilingCrushStop(line) end,
-    [75] = function(line,side,thing) EV_DoDoor(line,close) end,
-    [76] = function(line,side,thing) EV_DoDoor(line,close30ThenOpen) end,
-    [77] = function(line,side,thing) EV_DoCeiling(line,fastCrushAndRaise) end,
-    [79] = function(line,side,thing) EV_LightTurnOn(line,35) end,
-    [80] = function(line,side,thing) EV_LightTurnOn(line,0) end,
-    [81] = function(line,side,thing) EV_LightTurnOn(line,255) end,
-    [82] = function(line,side,thing) EV_DoFloor(line,lowerFloorToLowest) end,
-    [83] = function(line,side,thing) EV_DoFloor(line,lowerFloor) end,
-    [84] = function(line,side,thing) EV_DoFloor(line,lowerAndChange) end,
-    [86] = function(line,side,thing) EV_DoDoor(line,open) end,
-    [87] = function(line,side,thing) EV_DoPlat(line,perpetualRaise,0) end,
-    [88] = function(line,side,thing) EV_DoPlat(line,downWaitUpStay,0) end,
-    [89] = function(line,side,thing) EV_StopPlat(line) end,
-    [90] = function(line,side,thing) EV_DoDoor(line,normal) end,
-    [91] = function(line,side,thing) EV_DoFloor(line,raiseFloor) end,
-    [92] = function(line,side,thing) EV_DoFloor(line,raiseFloor24) end,
-    [93] = function(line,side,thing) EV_DoFloor(line,raiseFloor24AndChange) end,
-    [94] = function(line,side,thing) EV_DoFloor(line,raiseFloorCrush) end,
-    [95] = function(line,side,thing) EV_DoPlat(line,raiseToNearestAndChange,0) end,
-    [96] = function(line,side,thing) EV_DoFloor(line,raiseToTexture) end,
-    [97] = function(line,side,thing) EV_Teleport(line,side,thing) end,
-    [98] = function(line,side,thing) EV_DoFloor(line,turboLower) end,
-    [105] = function(line,side,thing) EV_DoDoor (line,blazeRaise) end,
-    [106] = function(line,side,thing) EV_DoDoor (line,blazeOpen) end,
-    [107] = function(line,side,thing) EV_DoDoor (line,blazeClose) end,
-    [120] = function(line,side,thing) EV_DoPlat(line,blazeDWUS,0) end,
-    [126] = function(line,side,thing) if not thing:IsPlayer() then EV_Teleport(line,side,thing) end end,
-    [128] = function(line,side,thing) EV_DoFloor(line,raiseFloorToNearest) end,
-    [129] = function(line,side,thing) EV_DoFloor(line,raiseFloorTurbo) end
+	[73] = function(line,side,thing) EV_DoCeiling(line,crushAndRaise) end,
+	[74] = function(line,side,thing) EV_CeilingCrushStop(line) end,
+	[75] = function(line,side,thing) EV_DoDoor(line,close) end,
+	[76] = function(line,side,thing) EV_DoDoor(line,close30ThenOpen) end,
+	[77] = function(line,side,thing) EV_DoCeiling(line,fastCrushAndRaise) end,
+	[79] = function(line,side,thing) EV_LightTurnOn(line,35) end,
+	[80] = function(line,side,thing) EV_LightTurnOn(line,0) end,
+	[81] = function(line,side,thing) EV_LightTurnOn(line,255) end,
+	[82] = function(line,side,thing) EV_DoFloor(line,lowerFloorToLowest) end,
+	[83] = function(line,side,thing) EV_DoFloor(line,lowerFloor) end,
+	[84] = function(line,side,thing) EV_DoFloor(line,lowerAndChange) end,
+	[86] = function(line,side,thing) EV_DoDoor(line,open) end,
+	[87] = function(line,side,thing) EV_DoPlat(line,perpetualRaise,0) end,
+	[88] = function(line,side,thing) EV_DoPlat(line,downWaitUpStay,0) end,
+	[89] = function(line,side,thing) EV_StopPlat(line) end,
+	[90] = function(line,side,thing) EV_DoDoor(line,normal) end,
+	[91] = function(line,side,thing) EV_DoFloor(line,raiseFloor) end,
+	[92] = function(line,side,thing) EV_DoFloor(line,raiseFloor24) end,
+	[93] = function(line,side,thing) EV_DoFloor(line,raiseFloor24AndChange) end,
+	[94] = function(line,side,thing) EV_DoFloor(line,raiseFloorCrush) end,
+	[95] = function(line,side,thing) EV_DoPlat(line,raiseToNearestAndChange,0) end,
+	[96] = function(line,side,thing) EV_DoFloor(line,raiseToTexture) end,
+	[97] = function(line,side,thing) EV_Teleport(line,side,thing) end,
+	[98] = function(line,side,thing) EV_DoFloor(line,turboLower) end,
+	[105] = function(line,side,thing) EV_DoDoor (line,blazeRaise) end,
+	[106] = function(line,side,thing) EV_DoDoor (line,blazeOpen) end,
+	[107] = function(line,side,thing) EV_DoDoor (line,blazeClose) end,
+	[120] = function(line,side,thing) EV_DoPlat(line,blazeDWUS,0) end,
+	[126] = function(line,side,thing) if not thing:IsPlayer() then EV_Teleport(line,side,thing) end end,
+	[128] = function(line,side,thing) EV_DoFloor(line,raiseFloorToNearest) end,
+	[129] = function(line,side,thing) EV_DoFloor(line,raiseFloorTurbo) end
 }
 
 function P_CrossSpecialLine(linenum, side, thing)
@@ -301,7 +299,7 @@ function EV_DoDonut(line)
 		for i = 1, #s2.lines do
 			if not tobool(bit.band(s2.lines[i].flags, ML_TWOSIDED)) or s2.lines[i].backsector.id == s1.id then continue end
 			s3 = s2.lines[i].backsector
-			
+
 			-- Spawn rising slime
 			local floor = {}
 			Map.thinkers[floor] = "T_MoveFloor"
@@ -315,7 +313,7 @@ function EV_DoDonut(line)
 			floor.texture = s3.floorpic
 			floor.newspecial = 0
 			floor.floordestheight = s3.floorheight
-			
+
 			-- Spawn lowering donut-hole
 			floor = {}
 			Map.thinkers[floor] = "T_MoveFloor"

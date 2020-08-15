@@ -60,7 +60,7 @@ end
 
 local DoPlat_Type = {
 	[raiseToNearestAndChange] = function(plat, line, amount)
-		plat.speed = PLATSPEED/2
+		plat.speed = PLATSPEED / 2
 		Map:ChangeFloorTexture(plat.sector, line.frontsector.floorpic)
 		plat.high = P_FindNextHighestFloor(plat.sector, plat.sector.floorheight)
 		plat.wait = 0
@@ -69,7 +69,7 @@ local DoPlat_Type = {
 		S_StartSound(plat.sector.floor, "sfx_stnmov")
 	end,
 	[raiseAndChange] = function(plat, line, amount)
-		plat.speed = PLATSPEED/2
+		plat.speed = PLATSPEED / 2
 		Map:ChangeFloorTexture(plat.sector, line.frontsector.floorpic)
 		plat.high = plat.sector.floorheight + amount
 		plat.wait = 0
@@ -81,7 +81,7 @@ local DoPlat_Type = {
 		plat.low = P_FindLowestFloorSurrounding(plat.sector)
 		if plat.low > plat.sector.floorheight then plat.low = plat.sector.floorheight end
 		plat.high = plat.sector.floorheight
-		plat.wait = 35*PLATWAIT
+		plat.wait = 35 * PLATWAIT
 		plat.status = down
 		S_StartSound(plat.sector.floor, "sfx_pstart")
 	end,
@@ -90,7 +90,7 @@ local DoPlat_Type = {
 		plat.low = P_FindLowestFloorSurrounding(plat.sector)
 		if plat.low > plat.sector.floorheight then plat.low = plat.sector.floorheight end
 		plat.high = plat.sector.floorheight
-		plat.wait = 35*PLATWAIT
+		plat.wait = 35 * PLATWAIT
 		plat.status = down
 		S_StartSound(plat.sector.floor, "sfx_pstart")
 	end,
@@ -100,7 +100,7 @@ local DoPlat_Type = {
 		if plat.low > plat.sector.floorheight then plat.low = plat.sector.floorheight end
 		plat.high = P_FindHighestFloorSurrounding(plat.sector)
 		if plat.high < plat.sector.floorheight then plat.high = plat.sector.floorheight end
-		plat.wait = 35*PLATWAIT;
+		plat.wait = 35 * PLATWAIT;
 		plat.status = bit.band(P_Random(), 1)
 		S_StartSound(plat.sector.floor, "sfx_pstart")
 	end

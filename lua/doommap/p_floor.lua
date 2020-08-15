@@ -16,7 +16,7 @@ function T_MovePlane(sector, speed, dest, crush, floorOrCeiling, direction)
 	local pos = ent:GetPos()
 	local save = ent:GetSaveTable()
 	if not ent.moving then
-		ent:SetSaveValue("m_flMoveDoneTime", save.ltime + math.abs(dest - pos.z)/(speed))
+		ent:SetSaveValue("m_flMoveDoneTime", save.ltime + math.abs(dest - pos.z) / speed)
 		ent:SetMoveType(MOVETYPE_PUSH)
 		ent.moving = true
 	end
@@ -39,7 +39,7 @@ function T_MovePlane(sector, speed, dest, crush, floorOrCeiling, direction)
 			return pastdest
 		end
 		if mobj then
-			if blocker:Health() <= 0 then 
+			if blocker:Health() <= 0 then
 				mobj:SetState(S_GIBS)
 				mobj:RemoveFlag(MF_SOLID)
 				mobj.height = 0
@@ -62,7 +62,7 @@ function T_MovePlane(sector, speed, dest, crush, floorOrCeiling, direction)
 				SpawnBlood(pos, 10)
 			end
 		end
-		
+
 		return crushed
 	end
 	return ok
@@ -122,7 +122,7 @@ local DoFloor_Type = {
 	end,
 	[raiseFloorTurbo] = function(floor)
 		floor.direction = 1
-		floor.speed = FLOORSPEED*4
+		floor.speed = FLOORSPEED * 4
 		floor.floordestheight = P_FindNextHighestFloor(floor.sector, floor.sector.floorheight)
 	end,
 	[raiseFloorToNearest] = function(floor)
@@ -216,17 +216,17 @@ function EV_BuildStairs(line, type)
 		floor.sector = sec
 		local speed, stairsize, height
 		if type == build8 then
-			speed = FLOORSPEED/4
+			speed = FLOORSPEED / 4
 			stairsize = 8 * HEIGHTCORRECTION
 		end
 		if type == turbo16 then
-			speed = FLOORSPEED*4
+			speed = FLOORSPEED * 4
 			stairsize = 16 * HEIGHTCORRECTION
 		end
 		floor.speed = speed
 		height = sec.floorheight + stairsize
 		floor.floordestheight = height
-		
+
 		local ok = true
 		while ok do
 			ok = false

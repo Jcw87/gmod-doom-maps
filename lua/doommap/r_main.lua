@@ -11,10 +11,10 @@ end
 function R_PointOnSide(x, y, node)
 	local dx = (x - node.x)
 	local dy = (y - node.y)
-	
+
 	local left = node.dy * dx
 	local right = dy * node.dx
-	
+
 	return right < left and 0 or 1
 end
 

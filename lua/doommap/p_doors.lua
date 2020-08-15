@@ -15,7 +15,7 @@ local VerticalDoor_Waiting = {
 local VerticalDoor_Down1 = {
 	[blazeRaise] = function(door) door.sector.specialdata = nil Map.thinkers[door] = nil S_StartSound(door.sector.ceiling, "sfx_bdcls") end,
 	[normal] = function(door) door.sector.specialdata = nil Map.thinkers[door] = nil end,
-	[close30ThenOpen] = function(door) door.direction = 0 door.topcountdown = 35*30 end
+	[close30ThenOpen] = function(door) door.direction = 0 door.topcountdown = 35 * 30 end
 }
 
 VerticalDoor_Down1[blazeClose] = VerticalDoor_Down1[blazeRaise]
@@ -58,7 +58,6 @@ local VerticalDoor_Direction = {
 	[-1] = function(door)
 		-- DOWN
 		local res = T_MovePlane(door.sector, door.speed, door.sector.floorheight, false, 1, door.direction)
-		
 		if res == pastdest then
 			local func = VerticalDoor_Down1[door.type]
 			if func then func(door) end
@@ -110,7 +109,7 @@ function EV_DoLockedDoor(line, type, thing)
 		S_StartSound(thing, "sfx_oof")
 		return false
 	end
-	
+
 	return EV_DoDoor(line, type)
 end
 
@@ -200,7 +199,7 @@ function EV_VerticalDoor(line, thing)
 	local ent = ToEntity(thing)
 	if ent:IsPlayer() then player = GetPlayerInfo(ent) end
 	local key = Keys[line.special]
-	if key then 
+	if key then
 		if not player then return end
 		if not player:HasCard(key.card, true) then
 			player:SendMessage(key.message)
@@ -208,7 +207,7 @@ function EV_VerticalDoor(line, thing)
 			return false
 		end
 	end
-	
+
 	-- If a VerticalDoor was activated on a single sided linedef, the game crashed.
 	-- This can be illustrated in MAP06: The Crusher
 	if not line.side[2] then
@@ -229,13 +228,13 @@ function EV_VerticalDoor(line, thing)
 			return
 		end
 	end
-	
+
 	if VerticalDoor_Blaze[line.special] then
 		S_StartSound(sec.ceiling, "sfx_bdopn")
 	else
 		S_StartSound(sec.ceiling, "sfx_doropn")
 	end
-	
+
 	door = {}
 	Map.thinkers[door] = true
 	sec.specialdata = door
@@ -246,8 +245,8 @@ function EV_VerticalDoor(line, thing)
 	door.topwait = VDOORWAIT
 	door.type = VerticalDoor_Type[line.special]
 	if door.type == open then line.special = 0 end
-	if door.type == blazeRaise then door.speed = VDOORSPEED*4 end
-	if door.type == blazeOpen then door.speed = VDOORSPEED*4 line.special = 0 end
+	if door.type == blazeRaise then door.speed = VDOORSPEED * 4 end
+	if door.type == blazeOpen then door.speed = VDOORSPEED * 4 line.special = 0 end
 	door.topheight = P_FindLowestCeilingSurrounding(sec) - 4 * HEIGHTCORRECTION
 end
 

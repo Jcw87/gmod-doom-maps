@@ -4,10 +4,7 @@ local tobool = tobool
 local tonumber = tonumber
 
 local CreateClientConVar = CreateClientConVar
-local EyePos = EyePos
 local GetRenderTargetEx = GetRenderTargetEx
-local ScrW = ScrW
-local Vector = Vector
 
 local bit = bit
 local cam = cam
@@ -44,7 +41,7 @@ local function AddClipRange(startangle, endangle)
 			table.remove(clipranges, i)
 			continue
 		end
-		if range.startangle <= startangle && range.endangle >= endangle then return end
+		if range.startangle <= startangle and range.endangle >= endangle then return end
 		i = i + 1
 	end
 	i = 1
@@ -54,11 +51,11 @@ local function AddClipRange(startangle, endangle)
 		if range.endangle >= startangle then
 			if range.startangle > startangle then range.startangle = startangle end
 			if range.endangle < endangle then range.endangle = endangle end
-			local range2 = clipranges[i+1]
+			local range2 = clipranges[i + 1]
 			while range2 and range2.startangle <= range.endangle do
 				if range2.endangle > range.endangle then range.endangle = range2.endangle end
-				table.remove(clipranges, i+1)
-				range2 = clipranges[i+1]
+				table.remove(clipranges, i + 1)
+				range2 = clipranges[i + 1]
 			end
 			return
 		end
@@ -109,36 +106,36 @@ end
 
 local checkcoord = {
 	{"right","top","left","bottom"},
-    {"right","top","left","top"},
-    {"right","bottom","left","top"},
-    {"top"},
-    {"left","top","left","bottom"},
-    {"top","top","top","top"},
-    {"right","bottom","right","top"},
-    {"top"},
-    {"left","top","right","bottom"},
-    {"left","bottom","right","bottom"},
-    {"left","bottom","right","top"}
+	{"right","top","left","top"},
+	{"right","bottom","left","top"},
+	{"top"},
+	{"left","top","left","bottom"},
+	{"top","top","top","top"},
+	{"right","bottom","right","top"},
+	{"top"},
+	{"left","top","right","bottom"},
+	{"left","bottom","right","bottom"},
+	{"left","bottom","right","top"}
 }
 
 function R_CheckBBox(bspcoord)
 	local boxx, boxy
 	if view.x <= bspcoord.left then boxx = 0 elseif view.x < bspcoord.right then boxx = 1 else boxx = 2 end
 	if view.y >= bspcoord.top then boxy = 0 elseif view.y > bspcoord.bottom then boxy = 4 else boxy = 8 end
-	
+
 	local boxpos = boxy + boxx
 	if boxpos == 5 then return true end
-	
-	local check = checkcoord[boxpos+1]
-	
+
+	local check = checkcoord[boxpos + 1]
+
 	local x1 = bspcoord[check[1]]
 	local y1 = bspcoord[check[2]]
 	local x2 = bspcoord[check[3]]
 	local y2 = bspcoord[check[4]]
-	
+
 	local angle1 = R_PointToAngle(x1, y1)
 	local angle2 = R_PointToAngle(x2, y2)
-	
+
 	return SafeCheckRange(angle2, angle1)
 end
 
@@ -179,7 +176,7 @@ function R_AddLine(line)
 	curline = line
 	local angle1 = R_PointToAngle(line.v1.x, line.v1.y)
 	local angle2 = R_PointToAngle(line.v2.x, line.v2.y)
-	
+
 	if NormalizeAngle(angle2 - angle1) < 180 or not line.linedef then return end
 	if not SafeCheckRange(angle2, angle1) then return end
 	if not line.backsector then
@@ -200,7 +197,7 @@ local function AddSector(sector)
 			if not renderlists[mesh.texture] then renderlists[mesh.texture] = {} end
 			--table.insert(renderlists[mesh.texture], mesh)
 		end
-		
+
 	end
 	for _, mesh in ipairs(Map.CeilMeshes[sectorid]) do
 		if mesh.ceil then
@@ -213,7 +210,7 @@ local function AddSector(sector)
 end
 
 function R_Subsector(num)
-	local sub = Map.Subsectors[num+1]
+	local sub = Map.Subsectors[num + 1]
 	if sub.sector.validcount ~= validcount then
 		sub.sector.validcount = validcount
 		AddSector(sub.sector)
@@ -228,11 +225,11 @@ function R_RenderBSPNode(bspnum)
 		R_Subsector(bit.bxor(bspnum, NF_SUBSECTOR))
 		return
 	end
-	local bsp = Map.Nodes[bspnum+1]
+	local bsp = Map.Nodes[bspnum + 1]
 	local side = R_PointOnSide(view.x, view.y, bsp)
-	R_RenderBSPNode(bsp.children[side+1])
+	R_RenderBSPNode(bsp.children[side + 1])
 	local otherside = bit.bxor(side, 1)
-	if R_CheckBBox(bsp.bbox[otherside+1]) then R_RenderBSPNode(bsp.children[otherside+1]) end
+	if R_CheckBBox(bsp.bbox[otherside + 1]) then R_RenderBSPNode(bsp.children[otherside + 1]) end
 end
 
 local dirtylights = {}
@@ -289,10 +286,10 @@ local NewRender = CreateClientConVar("doom_map_cl_newrender", 0, false, false)
 cvars.AddChangeCallback("doom_map_cl_newrender", function(name, oldvalue, newvalue)
 	if not Map then return end
 	if tonumber(newvalue) ~= 0 then return end
-	for i = 1, Map.Sidedefs.n do 
+	for i = 1, Map.Sidedefs.n do
 		for _, mesh in pairs(Map.SideMeshes[i]) do
 			mesh.visible = true
-		end		
+		end
 	end
 	for i = 1, Map.Sectors.n do
 		for _, mesh in ipairs(Map.FloorMeshes[i]) do
@@ -316,12 +313,12 @@ local function DrawMap(isDrawingDepth, isDrawSkybox)
 	if NewRender:GetInt() <= 0 then return end
 	if not Map or not Map.loaded then return end
 	--view = EyePos()
-	
+
 	-- TODO: do away with this and build render lists
-	for i = 1, Map.Sidedefs.n do 
+	for i = 1, Map.Sidedefs.n do
 		for _, mesh in pairs(Map.SideMeshes[i]) do
 			mesh.visible = false
-		end		
+		end
 	end
 	for i = 1, Map.Sectors.n do
 		for _, mesh in ipairs(Map.FloorMeshes[i]) do
@@ -334,7 +331,7 @@ local function DrawMap(isDrawingDepth, isDrawSkybox)
 	for texture, meshes in pairs(renderlists) do
 		table.Empty(meshes)
 	end
-	
+
 	ClearClipRanges()
 	validcount = validcount + 1
 	R_RenderBSPNode(Map.Nodes.n-1)

@@ -12,7 +12,6 @@ local MoveCeiling_Up = {
 	[raiseToHighest] = function(ceiling) ceiling.sector.specialdata = nil Map.thinkers[ceiling] = nil end,
 	[silentCrushAndRaise] = function(ceiling) S_StartSound(ceiling.sector.ceiling, "sfx_pstop") ceiling.direction = -1 end,
 	[fastCrushAndRaise] = function(ceiling) ceiling.direction = -1 end
-	
 }
 
 MoveCeiling_Up[crushAndRaise] = MoveCeiling_Up[fastCrushAndRaise]

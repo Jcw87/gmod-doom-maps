@@ -21,7 +21,7 @@ local function MessageBox(msg)
 end
 
 local function LoadError(msg)
-	if SERVER then 
+	if SERVER then
 		MsgC(Color(255, 0, 0), msg, "\n")
 		hook.Add("PlayerInitialSpawn", "DOOM.LoadErrorNotify", function(ply)
 			net.Start("DOOM.LoadErrorNotify")
@@ -36,7 +36,7 @@ net.Receive("DOOM.LoadErrorNotify", function()
 	MessageBox(msg)
 end)
 
-if type(ipairs) ~= "function" then LoadError("Another addon is not playing nice! ipairs was overwritten with "..tostring(ipairs)) return end
+if type(ipairs) ~= "function" then LoadError("Another addon is not playing nice! ipairs was overwritten with " .. tostring(ipairs)) return end
 
 -- Bypassing these checks isn't going to make the addon work. gmDoom is REQUIRED!
 pcall(require, "doom")

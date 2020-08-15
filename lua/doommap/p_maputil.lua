@@ -3,7 +3,6 @@ local tobool = tobool
 
 local bit = bit
 local math = math
-local string = string -- debugging
 
 setfenv( 1, DOOM )
 
@@ -83,7 +82,7 @@ function P_LineOpening(linedef)
 	if front.floorheight > back.floorheight then
 		openbottom = front.floorheight
 		lowfloor = back.floorheight
-    else
+	else
 		openbottom = back.floorheight
 		lowfloor = front.floorheight
 	end
@@ -93,7 +92,7 @@ end
 function P_BlockLinesIterator(x, y, func)
 	local Blockmap = Map.Blockmap
 	if x < 0 or y < 0 or x >= Blockmap.bmapwidth or y >= Blockmap.bmapheight then return true end
-	local list = Blockmap[y*Blockmap.bmapwidth+x+1]
+	local list = Blockmap[y * Blockmap.bmapwidth + x + 1]
 	for i, ld in ipairs(list) do -- LuaJIT was doing some weird stuff with 'for i = 1, #list do'
 		--local ld = list[i]
 		if ld.validcount == validcount then continue end
@@ -128,7 +127,7 @@ function PIT_AddLineIntercepts(ld)
 	intercepts[intercept_p].d = ld
 	intercept_p = intercept_p + 1
 	return true
-	
+
 end
 
 function P_TraverseIntercepts(func, maxfrac)
@@ -162,56 +161,56 @@ function P_PathTraverse(x1, y1, x2, y2, flags, trav)
 	trace.y = y1
 	trace.dx = x2 - x1
 	trace.dy = y2 - y1
-	
+
 	x1 = x1 - Blockmap.bmaporgx
 	y1 = y1 - Blockmap.bmaporgy
 	local xt1 = bit.arshift(x1, 7)
 	local yt1 = bit.arshift(y1, 7)
-	
+
 	x2 = x2 - Blockmap.bmaporgx
 	y2 = y2 - Blockmap.bmaporgy
 	local xt2 = bit.arshift(x2, 7)
 	local yt2 = bit.arshift(y2, 7)
-	
+
 	local mapxstep, partial, ystep
 	if xt2 > xt1 then
 		mapxstep = 1
-		partial = 1 - (x1/128 - math.floor(x1/128))
-		ystep = (y2-y1)/math.abs(x2-x1)
+		partial = 1 - (x1 / 128 - math.floor(x1 / 128))
+		ystep = (y2 - y1) / math.abs(x2 - x1)
 	elseif xt2 < xt1 then
 		mapxstep = -1
-		partial = x1/128 - math.floor(x1/128)
-		ystep = (y2-y1)/math.abs(x2-x1)
+		partial = x1 / 128 - math.floor(x1 / 128)
+		ystep = (y2 - y1) / math.abs(x2 - x1)
 	else
 		mapxstep = 0
 		partial = 1
 		ystep = 256
 	end
-	
-	local yintercept = y1/128 + partial * ystep
-	
+
+	local yintercept = y1 / 128 + partial * ystep
+
 	local mapystep, xstep
 	if yt2 > yt1 then
 		mapystep = 1
-		partial = 1 - (y1/128 - math.floor(y1/128))
-		xstep = (x2-x1)/math.abs(y2-y1)
+		partial = 1 - (y1 / 128 - math.floor(y1 / 128))
+		xstep = (x2 - x1) / math.abs(y2 - y1)
 	elseif yt2 < yt1 then
 		mapystep = -1
-		partial = y1/128 - math.floor(y1/128)
-		xstep = (x2-x1)/math.abs(y2-y1)
+		partial = y1 / 128 - math.floor(y1 / 128)
+		xstep = (x2-x1) / math.abs(y2-y1)
 	else
 		mapystep = 0
 		partial = 1
 		xstep = 256
 	end
-	
-	local xintercept = x1/128 + partial * xstep
-	
+
+	local xintercept = x1 / 128 + partial * xstep
+
 	local mapx = xt1
 	local mapy = yt1
-	
+
 	debug_blocks = {}
-	
+
 	for count = 1, 64 do
 		debug_blocks[count] = {x = mapx, y = mapy}
 		if tobool(bit.band(flags, PT_ADDLINES)) then

@@ -53,11 +53,11 @@ function P_TeleportMove(ent, x, y)
 
 	local newsubsec = Map:PointInSubsector(x, y)
 	ceilingline = nil
-	
+
 	tmdropoffz = newsubsec.sector.floorheight
 	tmfloorz = tmdropoffz
 	tmceilingz = newsubsec.sector.ceilingheight
-	
+
 	validcount = validcount + 1
 	for k, v in pairs(spechit) do spechit[k] = nil end
 	--[[
@@ -72,18 +72,18 @@ function P_TeleportMove(ent, x, y)
 		end
 	end
 	]]
-	local dest = Vector(x, y, tmfloorz+0.5)
+	local dest = Vector(x, y, tmfloorz + 0.5)
 	local mins = ent:OBBMins()
 	if not tActions.P_BlockThingsIterator(dest + mins, PIT_StompThing) then return false end
-	
+
 	--P_UnsetThingPosition(thing)
 
 	--thing.floorz = tmfloorz
 	--thing.ceilingz = tmceilingz
 	if tmthing then tmthing:SetPos(dest) else ent:SetPos(dest) end
-	
+
 	--P_SetThingPosition(thing)
-	
+
 	return true
 end
 
@@ -94,7 +94,7 @@ function PIT_CheckLine(ld)
 	or tmbbox.bottom >= ld.bbox.top then
 		return true
 	end
-	
+
 	if P_BoxOnLineSide(tmbbox, ld) ~= -1 then return true end
 	if not ld.backsector then return false end
 	--[[
@@ -126,21 +126,21 @@ function P_CheckPosition(ent, x, y)
 
 	tmx = x
 	tmy = y
-	
+
 	tmbbox = GetBBox(ent, x, y)
 
 	local newsubsec = Map:PointInSubsector(x, y)
 	ceilingline = nil
-	
+
 	tmdropoffz = newsubsec.sector.floorheight
 	tmfloorz = tmdropoffz
 	tmceilingz = newsubsec.sector.ceilingheight
-	
+
 	validcount = validcount + 1
 	for k, v in pairs(spechit) do spechit[k] = nil end
-	
+
 	if thing and tobool(bit.band(tmflags, MF_NOCLIP)) then return true end
-	
+
 	local Blockmap = Map.Blockmap
 	local x1 = bit.arshift(tmbbox.left - Blockmap.bmaporgx - MAXRADIUS, 7)
 	local xh = bit.arshift(tmbbox.right - Blockmap.bmaporgx + MAXRADIUS, 7)
@@ -151,7 +151,7 @@ function P_CheckPosition(ent, x, y)
 			--if not P_BlockThingsIterator(bx, by, PIT_CheckThing) then return false end
 		end
 	end
-	
+
 	x1 = bit.arshift(tmbbox.left - Blockmap.bmaporgx, 7)
 	xh = bit.arshift(tmbbox.right - Blockmap.bmaporgx, 7)
 	y1 = bit.arshift(tmbbox.bottom - Blockmap.bmaporgy, 7)
@@ -176,7 +176,7 @@ function PTR_UseTraverse(intercept)
 		end
 		return true
 	end
-	
+
 	local pos = usething:GetPos()
 	local side = P_PointOnLineSide(pos.x, pos.y, line)
 	P_UseSpecialLine(usething, line, side)
@@ -191,5 +191,5 @@ function P_UseLines(player)
 	dir = dir * USERANGE
 	local pos = player:GetPos()
 	P_PathTraverse(pos.x, pos.y, pos.x + dir.x, pos.y + dir.y, PT_ADDLINES, PTR_UseTraverse )
-	
+
 end

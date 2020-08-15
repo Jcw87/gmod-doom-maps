@@ -4,9 +4,7 @@ local error = error
 local pairs = pairs
 local print = print
 local setmetatable = setmetatable
-local tostring = tostring
 
-local coroutine = coroutine
 local hook = hook
 local math = math
 local net = net
@@ -14,7 +12,6 @@ local string = string
 local util = util
 local table = table
 local timer = timer
-local wad = wad
 
 setfenv( 1, DOOM )
 
@@ -69,7 +66,7 @@ end
 
 function MAP:SetupNet(wad)
 	local lumpnum = wad:GetLumpNum(self.name)
-	
+
 	local lumps = {}
 	lumps[ML_LINEDEFS] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_LINEDEFS):ReadString())
 	lumps[ML_SIDEDEFS] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_SIDEDEFS):ReadString())
@@ -79,7 +76,7 @@ function MAP:SetupNet(wad)
 	lumps[ML_NODES] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_NODES):ReadString())
 	lumps[ML_SECTORS] = PrepareLumpSend(wad:GetLumpByNum(lumpnum + ML_SECTORS):ReadString())
 	self.lumps = lumps
-	
+
 	SendMapInfo(self)
 end
 
@@ -201,7 +198,7 @@ local function NextMissingChunk()
 	end
 
 	AddMessage(string.format("Receiving map %s: %i/%i", Map.name, receivedchunks, totalchunks), 4)
-	
+
 	if nextlump then
 		net.Start("DOOM.ReqMapChunk")
 		net.WriteInt(nextlump, 8)
@@ -218,11 +215,11 @@ local function ReceiveMap(bits)
 	local name = net.ReadString()
 	print(string.format("Receiving info for %s/%s", wadname, name))
 	if name == "" then return end
-	
+
 	Map = setmetatable( {}, MAP )
 	Map.wadname = wadname
 	Map.name = name
-	
+
 	local lumps = {}
 	for i = 1, lumpsendtypes.n do
 		local type = lumpsendtypes[i]
@@ -232,7 +229,7 @@ local function ReceiveMap(bits)
 		}
 	end
 	Map.lumps = lumps
-	
+
 	local wad = OpenWad(wadname)
 	if wad then
 		local lumpnum = wad:GetLumpNum(name)
@@ -250,7 +247,7 @@ local function ReceiveMap(bits)
 		end
 	end
 	wad:Close()
-	
+
 	NextMissingChunk()
 end
 
@@ -278,7 +275,7 @@ local function ReceiveMapChunk(bits)
 		Map[typetoname[type]] = readers[type](s)
 		lump.loaded = true
 	end
-	
+
 	NextMissingChunk()
 end
 
@@ -328,7 +325,7 @@ local function ChangeWallTexture(sidedef, where, newpic)
 		sidedef.bottomtexture = newpic
 	end
 	local mesh = Map.SideMeshes[sidedef.id][where]
-	if mesh then 
+	if mesh then
 		mesh.material = mesh.flat and GetFlatMaterial(newpic) or GetTextureMaterial(newpic)
 	end
 end

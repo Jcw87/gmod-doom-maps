@@ -21,9 +21,9 @@ if SERVER then
 local soundtarget
 
 local function P_RecursiveSound(sec, soundblocks)
-	if sec.validcount == validcount and sec.soundtraversed <= soundblocks+1 then return end
+	if sec.validcount == validcount and sec.soundtraversed <= soundblocks + 1 then return end
 	sec.validcount = validcount
-	sec.soundtraversed = soundblocks+1
+	sec.soundtraversed = soundblocks + 1
 	sec.soundtarget = soundtarget
 	local check
 	for i = 1, #sec.lines do
@@ -117,7 +117,7 @@ hook.Add("DOOM.OnTick", "DOOM.CrossLine", function()
 						pos = ent:GetPos()
 						local side = P_PointOnLineSide(pos.x, pos.y, ld)
 						local oldside = P_PointOnLineSide(ent.oldpos.x, ent.oldpos.y, ld)
-						if side ~= oldside then P_CrossSpecialLine(ld.id, oldside+1, ent) end
+						if side ~= oldside then P_CrossSpecialLine(ld.id, oldside + 1, ent) end
 					end
 				end
 				ent.oldpos = ent:GetPos()

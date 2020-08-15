@@ -5,7 +5,6 @@ local getmetatable = getmetatable
 local setmetatable = setmetatable
 
 local string = string
-local table = table
 
 local bit = bit
 local file = file
@@ -46,13 +45,13 @@ function OpenWad(filename)
 	if not fstream then return end
 	local s = stream.wrap(fstream)
 	local size = s:Size()
-	
+
 	local ident = s:Read(4)
 	if ident ~= "IWAD" and ident ~= "PWAD" then errorf("'%s' is not a valid WAD file", filename) end
 	local numlumps = s:ReadUInt32LE()
 	local diroffset = s:ReadUInt32LE()
 	if diroffset < 0 or diroffset + numlumps * 16 > size then errorf("'%s' is not a valid WAD file", filename) end
-	
+
 	s:Seek(diroffset)
 	local wad = setmetatable({}, WAD)
 	wad.s = s
