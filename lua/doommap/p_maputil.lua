@@ -93,8 +93,8 @@ function P_BlockLinesIterator(x, y, func)
 	local Blockmap = Map.Blockmap
 	if x < 0 or y < 0 or x >= Blockmap.bmapwidth or y >= Blockmap.bmapheight then return true end
 	local list = Blockmap[y * Blockmap.bmapwidth + x + 1]
-	for i, ld in ipairs(list) do -- LuaJIT was doing some weird stuff with 'for i = 1, #list do'
-		--local ld = list[i]
+	for i = 1, #list do
+		local ld = list[i]
 		if ld.validcount == validcount then continue end
 		ld.validcount = validcount
 		if not func(ld) then return false end

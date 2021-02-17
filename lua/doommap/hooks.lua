@@ -113,7 +113,8 @@ hook.Add("DOOM.OnTick", "DOOM.CrossLine", function()
 				local pos = ent:GetPos()
 				if ent.oldpos and (ent.oldpos.x ~= pos.x or ent.oldpos.y ~= pos.y) then
 					P_CheckPosition(ent, ent.oldpos.x, ent.oldpos.y)
-					for i, ld in ipairs(spechit) do -- LuaJIT was doing some weird shit with 'for i = 1, #spechit do'
+					for i = 1, #spechit do
+						local ld = spechit[i]
 						pos = ent:GetPos()
 						local side = P_PointOnLineSide(pos.x, pos.y, ld)
 						local oldside = P_PointOnLineSide(ent.oldpos.x, ent.oldpos.y, ld)

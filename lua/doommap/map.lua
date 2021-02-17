@@ -283,8 +283,6 @@ function MAP:SetupSegs()
 	for i = 1, self.Segs.n do
 		local seg = self.Segs[i]
 		seg.id = i
-		if type(seg.v1) ~= "number" then print(i) end -- checking the type seems to prevent LuaJIT from screwing up
-		if type(seg.v2) ~= "number" then print(i) end
 		seg.v1 = self.Vertexes[seg.v1 + 1]
 		seg.v2 = self.Vertexes[seg.v2 + 1]
 		seg.linedef = self.Linedefs[seg.linedefnum + 1]
