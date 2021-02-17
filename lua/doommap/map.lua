@@ -5,6 +5,7 @@ local pairs = pairs
 local print = print
 local setmetatable = setmetatable
 local tobool = tobool
+local tonumber = tonumber
 
 local Angle = Angle
 local IsValid = IsValid
@@ -499,8 +500,10 @@ end
 
 local function GetMapNum(mapname)
 	local episode, map = mapname:match("^E(%d)M(%d)$")
+	episode, map = tonumber(episode), tonumber(map)
 	if episode then return episode, map end
 	map = mapname:match("^MAP(%d%d)$")
+	map = tonumber(map)
 	if map then return 1, map end
 	return 1, 1
 end
