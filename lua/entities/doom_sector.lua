@@ -196,6 +196,7 @@ function ENT:Draw()
 	if not self.matrix then return end
 	self.matrix:SetAngles(self:GetAngles())
 	self.matrix:SetTranslation(self:GetPos())
+	DOOM.SetLightmap()
 	cam.PushModelMatrix(self.matrix)
 	--render.SuppressEngineLighting( true )
 	--render.SetAmbientLight(255, 255, 255)

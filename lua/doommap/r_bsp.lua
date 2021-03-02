@@ -275,6 +275,14 @@ local function UpdateLights()
 	render.PopRenderTarget()
 end
 
+function SetLightmap()
+	if IsFullbright() then
+		render.SetLightmapTexture(whitelightmap)
+	else
+		render.SetLightmapTexture(lightmap)
+	end
+end
+
 hook.Add("PreRender", "DOOM.UpdateLights", UpdateLights)
 
 local draw3dsky = false
@@ -305,11 +313,6 @@ local function DrawMap(isDrawingDepth, isDrawSkybox)
 	-- isDrawSkybox only tells you if the 2d skybox is potentially visible.
 	-- it fails to act as a filter for 3d skybox passes if the map does not have a 3d skybox.
 	if draw3dsky then return end
-	if IsFullbright() then
-		render.SetLightmapTexture(whitelightmap)
-	else
-		render.SetLightmapTexture(lightmap)
-	end
 	if NewRender:GetInt() <= 0 then return end
 	if not Map or not Map.loaded then return end
 	--view = EyePos()
