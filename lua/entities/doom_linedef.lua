@@ -27,7 +27,7 @@ function ENT:Setup()
 
 		self:SetModel("models/props_c17/fence01a.mdl")
 		self:PhysicsInit(SOLID_VPHYSICS)
-		self:PhysicsInitConvex(self.phys, false)
+		self:PhysicsInitConvex(self.phys)
 		self:EnableCustomCollisions()
 		self:MakePhysicsObjectAShadow()
 		-- It's less game breaking to have this non-solid for now

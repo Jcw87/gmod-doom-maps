@@ -32,7 +32,7 @@ function ENT:Setup()
 	-- PhysicsFromMesh, PhysicsInitConvex, and PhysicsInitMultiConvex do not behave unless SetModel and PhysicsInit are called first
 	self:SetModel("models/hunter/plates/plate1x1.mdl")
 	self:PhysicsInit(SOLID_VPHYSICS)
-	self:PhysicsInitMultiConvex(self.phys, false)
+	self:PhysicsInitMultiConvex(self.phys)
 	self:EnableCustomCollisions()
 	self:MakePhysicsObjectAShadow()
 
