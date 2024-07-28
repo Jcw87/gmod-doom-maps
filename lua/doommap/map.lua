@@ -618,6 +618,7 @@ function SpawnPlayer(ply)
 	end
 	ply:SetPos(start:GetPos() )
 	ply:SetEyeAngles(start:GetAngles())
+	ply:SetLocalVelocity(Vector(0, 0, 0))
 	local info = GetPlayerInfo(ply)
 	info:ResetCards()
 	local powers = GetPlayerPowers(ply)
