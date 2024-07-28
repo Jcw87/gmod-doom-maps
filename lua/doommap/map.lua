@@ -434,6 +434,7 @@ function MAP:Spawn()
 		ent:SetLight(sector.lightlevel)
 		if ent:Setup() then
 			ent:Spawn()
+			ent:SetupCollision()
 		end
 
 		ent = ents.Create("doom_sector")
@@ -441,6 +442,7 @@ function MAP:Spawn()
 		ent:SetFloor(false)
 		if ent:Setup() then
 			ent:Spawn()
+			ent:SetupCollision()
 		end
 	end
 
@@ -451,6 +453,7 @@ function MAP:Spawn()
 			ent:SetLinedef(i)
 			ent:Setup()
 			ent:Spawn()
+			ent:SetupCollision()
 			self.Linedefs[i].ent = ent
 		end
 	end

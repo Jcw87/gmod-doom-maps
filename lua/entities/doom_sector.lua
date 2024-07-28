@@ -29,12 +29,6 @@ function ENT:Setup()
 	end
 	self.phys = floor and self.Map.FloorPhys[sectorid] or self.Map.CeilPhys[sectorid]
 	self:OffsetPhys()
-	-- PhysicsFromMesh, PhysicsInitConvex, and PhysicsInitMultiConvex do not behave unless SetModel and PhysicsInit are called first
-	self:SetModel("models/hunter/plates/plate1x1.mdl")
-	self:PhysicsInit(SOLID_VPHYSICS)
-	self:PhysicsInitMultiConvex(self.phys)
-	self:EnableCustomCollisions()
-	self:MakePhysicsObjectAShadow()
 
 	if SERVER then
 		self:SetMoveType(MOVETYPE_NOCLIP) -- Without this, move speeds get messed up
@@ -43,6 +37,7 @@ function ENT:Setup()
 		self:SetPos(self.offset)
 		self:SetUseType(SIMPLE_USE)
 	end
+
 	if CLIENT then
 		self.specialmeshes = self.Map.SpecialMeshes[sectorid]
 		self.meshes = floor and self.Map.FloorMeshes[sectorid] or self.Map.CeilMeshes[sectorid]
@@ -87,6 +82,14 @@ function ENT:Setup()
 	end
 	if floor then self.sector.floor = self else self.sector.ceiling = self end
 	return true
+end
+
+function ENT:SetupCollision()
+	self:PhysicsInitMultiConvex(self.phys)
+	self:SetSolid(SOLID_VPHYSICS)
+	self:SetSolidFlags(0)
+	self:EnableCustomCollisions()
+	self:MakePhysicsObjectAShadow()
 end
 
 function ENT:OffsetPhys()
@@ -147,7 +150,10 @@ if CLIENT then
 function ENT:Think()
 	local sector = self.sector
 	if not sector then
-		if self:GetSector() ~= 0 and DOOM.Map and DOOM.Map.loaded then self:Setup() end
+		if self:GetSector() ~= 0 and DOOM.Map and DOOM.Map.loaded then
+			self:Setup()
+			self:SetupCollision()
+		end
 		return
 	end
 	local floor = self:GetFloor()
