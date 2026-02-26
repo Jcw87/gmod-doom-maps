@@ -1,5 +1,7 @@
 AddCSLuaFile()
 
+local developer = GetConVar("developer")
+
 DEFINE_BASECLASS( "base_anim" )
 
 ENT.RenderGroup = RENDERGROUP_OPAQUE
@@ -11,7 +13,9 @@ function ENT:SetupDataTables()
 end
 
 function ENT:Initialize()
-
+	if developer:GetBool() then
+		print(string.format("[%s] Spawn sector %i %s", SERVER and "SERVER" or "CLIENT", self:GetSector(), self:GetFloor() and "floor" or "ceiling"))
+	end
 end
 
 function ENT:Setup()
@@ -66,6 +70,9 @@ function ENT:Setup()
 		for i = 1, #self.meshes do
 			local submesh = self.meshes[i]
 			local m = Mesh(submesh.material)
+			if developer:GetBool() then
+				print(string.format("Create mesh %i for sector %i %s", i, self:GetSector(), self:GetFloor() and "floor" or "ceiling"))
+			end
 			if submesh.verts then
 				mesh.Begin(m, MATERIAL_POLYGON, #submesh.verts)
 				DOOM.BuildFlatVertexes(submesh, -self.offset)
@@ -85,6 +92,9 @@ function ENT:Setup()
 end
 
 function ENT:SetupCollision()
+	if developer:GetBool() then
+		print(string.format("[%s] Setup collision for sector %i %s", SERVER and "SERVER" or "CLIENT", self:GetSector(), self:GetFloor() and "floor" or "ceiling"))
+	end
 	self:PhysicsInitMultiConvex(self.phys)
 	self:SetSolid(SOLID_VPHYSICS)
 	self:SetSolidFlags(0)

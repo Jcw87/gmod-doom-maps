@@ -13,6 +13,8 @@ local util = util
 local table = table
 local timer = timer
 
+local developer = GetConVar("developer")
+
 setfenv( 1, DOOM )
 
 if SERVER then
@@ -227,6 +229,9 @@ local function ReceiveMap(bits)
 			numchunks = net.ReadInt(8),
 			hash = net.ReadData(16),
 		}
+		if developer:GetBool() then
+			print(string.format("%10s: %i chunks, MD5 %s", typetoname[type], lumps[type].numchunks, md5.tohex(lumps[type].hash)))
+		end
 	end
 	Map.lumps = lumps
 
@@ -240,6 +245,9 @@ local function ReceiveMap(bits)
 				local data = wad:GetLumpByNum(lumpnum + type):ReadString()
 				local hash = md5.sum(data)
 				if hash == lump.hash then
+					if developer:GetBool() then
+						print(string.format("Using local %s for %s/%s", typetoname[type], wadname, name))
+					end
 					Map[typetoname[type]] = readers[type](stream.wrap(data))
 					for j = 1, lump.numchunks do lump[j] = true end
 				end

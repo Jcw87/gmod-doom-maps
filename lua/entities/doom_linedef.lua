@@ -1,5 +1,7 @@
 AddCSLuaFile()
 
+local developer = GetConVar("developer")
+
 DEFINE_BASECLASS( "base_anim" )
 
 ENT.RenderGroup = RENDERGROUP_OPAQUE
@@ -9,7 +11,9 @@ function ENT:SetupDataTables()
 end
 
 function ENT:Initialize()
-
+	if developer:GetBool() then
+		print(string.format("[%s] Spawn linedef %i", SERVER and "SERVER" or "CLIENT", self:GetLinedef()))
+	end
 end
 
 function ENT:Setup()
@@ -36,6 +40,9 @@ end
 
 function ENT:SetupCollision()
 	if self.phys then
+		if developer:GetBool() then
+			print(string.format("[%s] Setup collision for linedef %i", SERVER and "SERVER" or "CLIENT", self:GetLinedef()))
+		end
 		self:PhysicsInitConvex(self.phys)
 		self:SetSolid(SOLID_VPHYSICS)
 		self:SetSolidFlags(0)
