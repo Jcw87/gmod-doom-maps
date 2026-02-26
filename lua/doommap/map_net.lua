@@ -253,8 +253,8 @@ local function ReceiveMap(bits)
 				end
 			end
 		end
+		wad:Close()
 	end
-	wad:Close()
 
 	NextMissingChunk()
 end
