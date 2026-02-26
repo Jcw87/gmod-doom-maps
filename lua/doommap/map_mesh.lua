@@ -433,6 +433,8 @@ function MAP:CreateMeshes()
 		local sector = subsector.sector
 		local vertcount = #poly
 
+		if vertcount < 3 then continue end
+
 		local bottom = sector.floorheight - (sector.maxfloor - FindLowestSurrounding(sector, "minfloor", sector.floorheight))
 		local top = sector.ceilingheight + (FindHighestSurrounding(sector, "maxceiling", sector.ceilingheight) - sector.minceiling)
 		if bottom == sector.floorheight then bottom = bottom - 8 end
