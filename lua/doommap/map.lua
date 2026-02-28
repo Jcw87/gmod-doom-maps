@@ -427,7 +427,7 @@ function MAP:Spawn()
 		if i % 10 == 0 then coroutine.yield() end
 		local sector = self.Sectors[i]
 		if #sector.lines == 0 then continue end -- ignore orphaned sectors
-		if #self.FloorPhys[i] > 256 or #self.CeilPhys[i] > 256 then print(string.format("Sector %i is too complex for vphysics!", i-1)) continue end
+		--if #self.FloorPhys[i] > 256 or #self.CeilPhys[i] > 256 then print(string.format("Sector %i is too complex for vphysics!", i-1)) continue end
 		local ent = ents.Create("doom_sector")
 		ent:SetSector(i)
 		ent:SetFloor(true)
