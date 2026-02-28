@@ -65,7 +65,6 @@ function ENT:Setup()
 		bbox.lower.z = math.min(bbox.lower.z, DOOM.FindLowestSurrounding(self.sector, "minfloor") - self.sector.maxfloor, self.sector.minfloor)
 		bbox.upper.z = math.max(bbox.upper.z, DOOM.FindHighestSurrounding(self.sector, "maxceiling") - self.sector.minceiling, self.sector.maxceiling)
 		self:SetRenderBounds(bbox.lower - self.offset, bbox.upper - self.offset)
-		self.matrix = Matrix()
 
 		for i = 1, #self.meshes do
 			local submesh = self.meshes[i]
@@ -209,11 +208,9 @@ local function DrawWall(wall)
 end
 
 function ENT:Draw()
-	if not self.matrix then return end
-	self.matrix:SetAngles(self:GetAngles())
-	self.matrix:SetTranslation(self:GetPos())
+	if not self.meshes then return end
 	DOOM.SetLightmap()
-	cam.PushModelMatrix(self.matrix)
+	cam.PushModelMatrix(self:GetWorldTransformMatrix())
 	--render.SuppressEngineLighting( true )
 	--render.SetAmbientLight(255, 255, 255)
 	for i = 1, #self.meshes do
@@ -240,7 +237,6 @@ function ENT:OnRemove()
 			self.meshes[i].mesh = nil
 		end
 	end
-	self.matrix = nil
 	self.sector = nil
 end
 
