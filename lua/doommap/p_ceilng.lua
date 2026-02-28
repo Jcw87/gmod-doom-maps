@@ -36,7 +36,7 @@ local MoveCeiling_Direction = {
 	[1] = function(ceiling)
 		-- UP
 		local res = T_MovePlane(ceiling.sector, ceiling.speed, ceiling.topheight, false, 1, ceiling.direction)
-		if tobool(bit.band(LevelTime(), 7)) and ceiling.type ~= silentCrushAndRaise then
+		if not tobool(bit.band(LevelTime(), 7)) and ceiling.type ~= silentCrushAndRaise then
 			S_StartSound(ceiling.sector.ceiling, "sfx_stnmov")
 		end
 		if res == pastdest then
@@ -47,7 +47,7 @@ local MoveCeiling_Direction = {
 	[-1] = function(ceiling)
 		-- DOWN
 		local res = T_MovePlane(ceiling.sector, ceiling.speed, ceiling.bottomheight, ceiling.crush, 1, ceiling.direction)
-		if tobool(bit.band(LevelTime(), 7)) and ceiling.type ~= silentCrushAndRaise then
+		if not tobool(bit.band(LevelTime(), 7)) and ceiling.type ~= silentCrushAndRaise then
 			S_StartSound(ceiling.sector.ceiling, "sfx_stnmov")
 		end
 		if res == pastdest then
